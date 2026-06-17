@@ -1,0 +1,70 @@
+# Ketel Mail
+
+Ketel Mail is een gratis, zelf-hostbare webmail-app voor je eigen server. De app start standaard met een demo-inbox, zodat je direct kunt kijken hoe hij werkt. Zet `DEMO_MODE=false` en vul IMAP/SMTP-gegevens in om hem met een echte mailbox te gebruiken.
+
+## Lokaal starten
+
+```bash
+npm install
+npm run dev
+```
+
+Open daarna `http://localhost:5173`.
+
+## Productie draaien
+
+```bash
+npm install
+npm run build
+npm start
+```
+
+Open daarna `http://localhost:8080`.
+
+## Eigen desktopvenster
+
+Ketel Mail kan ook als losse desktop-app draaien. De app start dan zelf de lokale mailserver en opent in een eigen venster.
+
+```bash
+npm run desktop
+```
+
+Sneller opnieuw openen wanneer er al een productiebuild staat:
+
+```bash
+npm run desktop:fast
+```
+
+Installers bouwen voor verschillende OS'en:
+
+```bash
+npm run dist:win
+npm run dist:linux
+npm run dist:mac
+```
+
+De builds komen in `release/`. Bouw macOS-installers het liefst op macOS; Windows- en Linux-builds kunnen vanaf hun eigen OS worden gemaakt.
+
+## Docker
+
+```bash
+docker compose up --build
+```
+
+## Eigen mailserver
+
+Ketel Mail is de webmail-laag. Voor echte mailhosting heb je daarnaast een mailserver nodig met DNS-records zoals MX, SPF, DKIM en DMARC. Je kunt Ketel Mail koppelen aan elke server die IMAP en SMTP aanbiedt, bijvoorbeeld een eigen Mailu, Stalwart, Docker Mailserver of Postfix/Dovecot setup.
+
+## Wat maakt Ketel Mail anders
+
+- Command center voor snelle acties.
+- Focusmodi voor alles, belangrijk, ongelezen en bijlagen.
+- Slimme prioriteiten op basis van onderwerp, labels, sterren en bijlagen.
+- Assistentpaneel met samenvatting, antwoordvoorstellen en workflow-acties.
+- Snelle composer met toonkeuze en templates.
+- Licht en donker thema.
+- Docker-ready en volledig self-hostable.
+
+## Belangrijk
+
+Deze eerste versie gebruikt server-side env-instellingen voor één mailbox. Voor meerdere gebruikers kun je later login, sessies en per-gebruiker IMAP/SMTP instellingen toevoegen.

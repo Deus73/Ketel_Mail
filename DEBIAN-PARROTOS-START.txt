@@ -1,0 +1,26 @@
+Ketel Mail starten op Debian / ParrotOS
+======================================
+
+1. Pak de zip uit.
+
+2. Ga de map in:
+   cd ketel-mail-parrotos
+
+3. Maak scripts uitvoerbaar als dat nodig is:
+   chmod +x install-debian-parrot.sh start-debian-parrot.sh ketel-mail-starten.sh
+
+4. Installeer en bouw:
+   ./install-debian-parrot.sh
+
+5. Start Ketel Mail in eigen venster:
+   ./start-debian-parrot.sh
+
+Als Electron op jouw ParrotOS extra systeembibliotheken mist:
+
+sudo apt update
+sudo apt install -y nodejs npm libgtk-3-0 libnss3 libxss1 libasound2 libatk-bridge2.0-0 libdrm2 libgbm1
+
+Mailinstellingen:
+- .env wordt lokaal aangemaakt uit .env.example.
+- Vul daarna je IMAP/SMTP gegevens in via de Ketel Mail instellingenpagina.
+- De echte .env uit deze Windows-map is bewust niet in de zip gezet, zodat wachtwoorden niet per ongeluk worden meegenomen.

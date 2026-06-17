@@ -1,0 +1,17 @@
+{
+  "name": "Ketel Mail",
+  "short_name": "Ketel Mail",
+  "description": "Zelf-gehoste webmail in een snelle eigen app.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1512",
+  "theme_color": "#0d7c72",
+  "icons": [
+    {
+      "src": "/icons/ketel-mail-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
