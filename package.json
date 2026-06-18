@@ -34,22 +34,22 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "^5.1.1",
     "compression": "^1.8.1",
     "express": "^5.1.0",
     "franc-min": "^6.2.0",
     "imapflow": "^1.0.194",
-    "lucide-react": "^0.468.0",
     "mailparser": "^3.7.2",
     "nodemailer": "^9.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "sanitize-html": "^2.17.5",
-    "vite": "^8.0.16"
+    "sanitize-html": "^2.17.5"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.1",
     "electron": "^42.4.1",
-    "electron-builder": "^26.15.3"
+    "electron-builder": "^26.15.3",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "vite": "^8.0.16"
   },
   "build": {
     "appId": "com.ketelmail.desktop",
