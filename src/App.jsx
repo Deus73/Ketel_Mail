@@ -2143,15 +2143,15 @@ function App() {
                 </section>
 
                 <div className="reader-view-toggle" aria-label="Berichtweergave">
-                  <button className={readerView === "view" ? "active" : ""} onClick={() => setReaderView("view")}>
+                  <button type="button" className={readerView === "view" ? "active" : ""} onClick={() => setReaderView("view")}>
                     <Eye size={16} />
                     Weergave
                   </button>
-                  <button className={readerView === "text" ? "active" : ""} onClick={() => setReaderView("text")}>
+                  <button type="button" className={readerView === "text" ? "active" : ""} onClick={() => setReaderView("text")}>
                     <FileText size={16} />
                     Tekst
                   </button>
-                  <button className={readerView === "source" ? "active" : ""} onClick={() => setReaderView("source")}>
+                  <button type="button" className={readerView === "source" ? "active" : ""} onClick={() => setReaderView("source")}>
                     <Code2 size={16} />
                     Bron
                   </button>
@@ -2575,13 +2575,18 @@ function Metric({ icon: Icon, label, value }) {
 }
 
 function EmailBody({ message, view, translation }) {
-  const html = message.bodyHtml || "";
-  const text = message.bodyText || message.body || "";
-  const source = message.bodySource || "";
+  const html = String(message.bodyHtml || "").trim();
+  const body = String(message.body || "").trim();
+  const text = String(message.bodyText || "").trim() || htmlToPlainText(html) || htmlToPlainText(body) || message.preview || "";
+  const source = String(message.bodySource || "").trim() || html || body || text;
 
   if (view === "source") {
     return (
       <div className="source-view">
+        <div className="viewer-note">
+          <Code2 size={16} />
+          <span>Originele bron / beste beschikbare ruwe inhoud</span>
+        </div>
         {message.sourceTruncated ? <p>Bron is ingekort omdat het bericht erg groot is.</p> : null}
         <pre>{source || "Geen bron beschikbaar."}</pre>
       </div>
@@ -2589,7 +2594,17 @@ function EmailBody({ message, view, translation }) {
   }
 
   if (view === "text" || !html) {
-    return <pre className="message-body">{translation?.translatedBody || text || "Geen tekstinhoud beschikbaar."}</pre>;
+    return (
+      <div className="plain-view">
+        {!html && view === "view" ? (
+          <div className="viewer-note">
+            <FileText size={16} />
+            <span>Deze mail heeft geen aparte HTML-weergave. Ketel Mail toont de nette tekstversie.</span>
+          </div>
+        ) : null}
+        <pre className="message-body">{translation?.translatedBody || text || "Geen tekstinhoud beschikbaar."}</pre>
+      </div>
+    );
   }
 
   if (translation?.translatedBody) {

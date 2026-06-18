@@ -2192,6 +2192,28 @@ body.resizing-message-list {
   line-height: 1.72;
 }
 
+.plain-view,
+.source-view {
+  display: grid;
+  gap: 12px;
+}
+
+.viewer-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 12px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 760;
+}
+
 .email-frame-wrap {
   max-width: 940px;
   margin-top: 18px;
@@ -2271,6 +2293,12 @@ body.resizing-message-list {
 .app-shell.dark .source-view pre {
   background: #101714;
   border-color: rgba(169, 196, 181, 0.18);
+}
+
+.app-shell.dark .viewer-note {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink-soft);
 }
 
 .translation-panel {
