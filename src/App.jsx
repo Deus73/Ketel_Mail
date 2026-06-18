@@ -551,9 +551,8 @@ function friendlyContentType(contentType = "") {
 }
 
 function attachmentUrl(message, attachment, disposition) {
-  return `/api/messages/${encodeURIComponent(message.folder)}/${encodeURIComponent(message.id)}/attachments/${encodeURIComponent(
-    attachment.id
-  )}?disposition=${disposition}`;
+  const params = new URLSearchParams({ disposition, name: attachment.name || "" });
+  return `/api/messages/${encodeURIComponent(message.folder)}/${encodeURIComponent(message.id)}/attachments/${encodeURIComponent(attachment.id)}?${params.toString()}`;
 }
 
 function messageKey(message) {
@@ -606,6 +605,23 @@ function isImageAttachment(attachment) {
   const type = String(attachment?.contentType || "").toLowerCase();
   const name = String(attachment?.name || "").toLowerCase();
   return type.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp|avif)$/i.test(name);
+}
+
+function isPreviewableAttachment(attachment) {
+  const type = String(attachment?.contentType || "").toLowerCase();
+  const name = String(attachment?.name || "").toLowerCase();
+  return isImageAttachment(attachment) || type === "application/pdf" || type.startsWith("text/") || /\.(pdf|txt|csv|log)$/i.test(name);
+}
+
+function attachmentKind(attachment) {
+  const type = String(attachment?.contentType || "").toLowerCase();
+  const name = String(attachment?.name || "").toLowerCase();
+  if (isImageAttachment(attachment)) return "Afbeelding";
+  if (type === "application/pdf" || name.endsWith(".pdf")) return "PDF";
+  if (/spreadsheet|excel|csv/.test(type) || /\.(xlsx?|csv)$/i.test(name)) return "Spreadsheet";
+  if (/word|document/.test(type) || /\.docx?$/i.test(name)) return "Document";
+  if (/zip|compressed|archive/.test(type) || /\.(zip|rar|7z|tar|gz)$/i.test(name)) return "Archief";
+  return "Bestand";
 }
 
 function loadAutoTranslateSetting() {
@@ -2381,25 +2397,47 @@ function MusicDock({ onToast }) {
 
 function AttachmentList({ message }) {
   const [previewId, setPreviewId] = useState("");
+  const [hoverId, setHoverId] = useState("");
   const attachments = (message.attachments || []).map(normalizeAttachment);
   if (!attachments.length) return null;
+  const selectedPreview = attachments.find((attachment) => attachment.id === previewId && isPreviewableAttachment(attachment));
+  const totalSize = attachments.reduce((sum, attachment) => sum + Number(attachment.size || 0), 0);
 
   return (
     <section className="attachments" aria-label="Bijlagen">
       <div className="attachments-heading">
-        <Paperclip size={17} />
-        <strong>Bijlagen</strong>
-        <span>{attachments.length}</span>
+        <div>
+          <Paperclip size={17} />
+          <strong>Bijlagen</strong>
+          <span>{attachments.length}</span>
+        </div>
+        <em>{totalSize ? formatBytes(totalSize) : "Grootte onbekend"}</em>
       </div>
+      {selectedPreview ? (
+        <div className="attachment-preview-panel">
+          <div className="attachment-preview-title">
+            <strong>{selectedPreview.name}</strong>
+            <button type="button" onClick={() => setPreviewId("")} aria-label="Voorbeeld sluiten">
+              <X size={15} />
+            </button>
+          </div>
+          {isImageAttachment(selectedPreview) ? (
+            <img src={attachmentUrl(message, selectedPreview, "inline")} alt={selectedPreview.name} />
+          ) : (
+            <iframe title={`Voorbeeld van ${selectedPreview.name}`} src={attachmentUrl(message, selectedPreview, "inline")} sandbox="" />
+          )}
+        </div>
+      ) : null}
       {attachments.map((attachment) => {
         const previewUrl = attachmentUrl(message, attachment, "inline");
-        const showPreview = previewId === attachment.id && isImageAttachment(attachment);
+        const canPreview = isPreviewableAttachment(attachment);
+        const showPreview = hoverId === attachment.id && isImageAttachment(attachment);
         return (
         <article
           className={`attachment-card ${showPreview ? "previewing" : ""}`}
           key={`${attachment.id}-${attachment.name}`}
-          onMouseEnter={() => setPreviewId(attachment.id)}
-          onMouseLeave={() => setPreviewId("")}
+          onMouseEnter={() => setHoverId(attachment.id)}
+          onMouseLeave={() => setHoverId("")}
         >
           <div className="attachment-icon" aria-hidden="true">
             <Paperclip size={18} />
@@ -2407,12 +2445,18 @@ function AttachmentList({ message }) {
           <div className="attachment-info">
             <strong>{attachment.name}</strong>
             <span>
-              {friendlyContentType(attachment.contentType)}
+              {attachmentKind(attachment)} · {friendlyContentType(attachment.contentType)}
               {" · "}
               {formatBytes(attachment.size)}
             </span>
           </div>
           <div className="attachment-actions">
+            {canPreview ? (
+              <button type="button" onClick={() => setPreviewId((current) => (current === attachment.id ? "" : attachment.id))} title={`Bekijk ${attachment.name}`}>
+                <Eye size={16} />
+                Bekijk
+              </button>
+            ) : null}
             <a href={previewUrl} target="_blank" rel="noreferrer" title={`Open ${attachment.name}`}>
               <ExternalLink size={16} />
               Openen

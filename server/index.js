@@ -529,6 +529,15 @@ function attachmentMetadata(item, index) {
   };
 }
 
+function findParsedAttachment(parsed, index, requestedName = "") {
+  const attachments = parsed.attachments || [];
+  const byIndex = attachments[index] || null;
+  if (!requestedName) return byIndex;
+  const safeRequestedName = safeAttachmentName(requestedName).toLowerCase();
+  if (byIndex && safeAttachmentName(byIndex.filename || "").toLowerCase() === safeRequestedName) return byIndex;
+  return attachments.find((item) => safeAttachmentName(item.filename || "").toLowerCase() === safeRequestedName) || byIndex;
+}
+
 function attachmentHintsFromStructure(structure) {
   const hints = [];
 
@@ -1439,6 +1448,7 @@ app.get("/api/messages/:folder/:id/attachments/:attachmentId", async (req, res, 
     const { folder, id, attachmentId } = req.params;
     const index = Number(attachmentId);
     const requestedDisposition = req.query.disposition === "inline" ? "inline" : "attachment";
+    const requestedName = String(req.query.name || "");
 
     if (!Number.isInteger(index) || index < 0) return res.status(400).json({ error: "Ongeldige bijlage." });
 
@@ -1459,7 +1469,7 @@ app.get("/api/messages/:folder/:id/attachments/:attachmentId", async (req, res, 
         const downloaded = await client.download(Number(id), undefined, { uid: true });
         const rawBuffer = await contentToBuffer(downloaded.content);
         const parsed = await simpleParser(rawBuffer);
-        return parsed.attachments?.[index] || null;
+        return findParsedAttachment(parsed, index, requestedName);
       } finally {
         lock.release();
       }

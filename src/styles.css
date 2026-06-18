@@ -2080,15 +2080,33 @@ body.resizing-message-list {
   display: grid;
   align-items: stretch;
   max-width: 940px;
-  gap: 10px;
-  margin-top: 28px;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel-soft) 76%, transparent);
 }
 
 .attachments-heading {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
   color: var(--ink);
+}
+
+.attachments-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.attachments-heading em {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 720;
 }
 
 .attachments-heading span {
@@ -2106,11 +2124,18 @@ body.resizing-message-list {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  padding: 10px;
+  gap: 10px;
+  padding: 8px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--panel-soft);
+  background: var(--panel);
+  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.attachment-card:hover,
+.attachment-card.previewing {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  background: color-mix(in srgb, var(--accent) 7%, var(--panel));
 }
 
 .attachment-icon {
@@ -2143,28 +2168,79 @@ body.resizing-message-list {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
 }
 
-.attachment-actions a {
+.attachment-actions a,
+.attachment-actions button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  min-height: 34px;
-  padding: 0 11px;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--panel);
   color: var(--ink);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   text-decoration: none;
 }
 
-.attachment-actions a:hover {
+.attachment-actions a:hover,
+.attachment-actions button:hover {
   border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
   background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+}
+
+.attachment-preview-panel {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.attachment-preview-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.attachment-preview-title strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-preview-title button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-soft);
+  color: var(--ink);
+}
+
+.attachment-preview-panel img,
+.attachment-preview-panel iframe {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  border: 0;
+  border-radius: 6px;
+  background: #ffffff;
+  object-fit: contain;
+}
+
+.attachment-preview-panel iframe {
+  min-height: 360px;
 }
 
 .app-shell.dark .attachment-card,
@@ -2189,10 +2265,18 @@ body.resizing-message-list {
   color: #80ead2;
 }
 
-.app-shell.dark .attachment-actions a {
+.app-shell.dark .attachment-actions a,
+.app-shell.dark .attachment-actions button,
+.app-shell.dark .attachment-preview-title button {
   background: rgba(255, 255, 255, 0.045);
   border-color: rgba(169, 196, 181, 0.18);
   color: var(--ink);
+}
+
+.app-shell.dark .attachments,
+.app-shell.dark .attachment-preview-panel {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(169, 196, 181, 0.16);
 }
 
 .right-rail {
@@ -3612,7 +3696,8 @@ body.resizing-message-list {
     justify-content: flex-start;
   }
 
-  .attachment-actions a {
+  .attachment-actions a,
+  .attachment-actions button {
     flex: 1 1 130px;
   }
 
