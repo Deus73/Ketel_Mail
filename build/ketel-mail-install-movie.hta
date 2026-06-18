@@ -18,8 +18,8 @@
     <style>
       html,
       body {
-        width: 720px;
-        height: 430px;
+        width: 920px;
+        height: 560px;
         margin: 0;
         overflow: hidden;
         background: #120717;
@@ -29,8 +29,8 @@
 
       .stage {
         position: relative;
-        width: 720px;
-        height: 430px;
+        width: 920px;
+        height: 560px;
         background:
           radial-gradient(circle at 16% 12%, rgba(255, 92, 154, 0.25), transparent 190px),
           radial-gradient(circle at 82% 18%, rgba(68, 221, 202, 0.17), transparent 180px),
@@ -39,28 +39,28 @@
 
       .title {
         position: absolute;
-        left: 28px;
-        top: 22px;
+        left: 34px;
+        top: 26px;
       }
 
       h1 {
         margin: 0 0 6px;
-        font-size: 28px;
+        font-size: 34px;
         line-height: 1;
       }
 
       p {
         margin: 0;
         color: #d9c3dd;
-        font-size: 14px;
+        font-size: 16px;
       }
 
       .room {
         position: absolute;
-        left: 24px;
-        right: 24px;
-        bottom: 26px;
-        height: 285px;
+        left: 26px;
+        right: 26px;
+        bottom: 34px;
+        height: 380px;
         border: 1px solid rgba(255, 189, 219, 0.24);
         border-radius: 18px;
         background:
@@ -74,7 +74,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        height: 86px;
+        height: 104px;
         border-radius: 0 0 18px 18px;
         background: linear-gradient(180deg, rgba(255, 209, 102, 0.09), rgba(0, 0, 0, 0.18));
       }
@@ -82,9 +82,9 @@
       .chair {
         position: absolute;
         left: 82px;
-        bottom: 76px;
-        width: 190px;
-        height: 86px;
+        bottom: 96px;
+        width: 238px;
+        height: 106px;
         border: 4px solid #5f2368;
         border-radius: 22px 22px 12px 12px;
         background: linear-gradient(135deg, #33143b, #1b0b22);
@@ -96,8 +96,8 @@
         position: absolute;
         left: 22px;
         right: 22px;
-        top: -58px;
-        height: 72px;
+        top: -72px;
+        height: 90px;
         border: 4px solid #5f2368;
         border-radius: 30px 30px 12px 12px;
         background: #24102d;
@@ -105,10 +105,10 @@
 
       .person {
         position: absolute;
-        left: 132px;
-        bottom: 136px;
-        width: 100px;
-        height: 140px;
+        left: 148px;
+        bottom: 172px;
+        width: 142px;
+        height: 190px;
         transform: rotate(-10deg);
         transform-origin: 50% 100%;
         animation: slump 2.6s ease-in-out infinite;
@@ -116,38 +116,38 @@
 
       .head {
         position: absolute;
-        left: 34px;
+        left: 42px;
         top: 0;
-        width: 46px;
-        height: 46px;
-        border: 3px solid #ffd166;
+        width: 64px;
+        height: 64px;
+        border: 4px solid #ffd166;
         border-radius: 50%;
         background: #ffc47a;
       }
 
       .eye {
         position: absolute;
-        top: 18px;
-        width: 7px;
-        height: 3px;
+        top: 25px;
+        width: 10px;
+        height: 4px;
         border-radius: 999px;
         background: #38133c;
       }
 
       .eye.left {
-        left: 11px;
+        left: 15px;
       }
 
       .eye.right {
-        right: 11px;
+        right: 15px;
       }
 
       .mouth {
         position: absolute;
-        left: 16px;
-        bottom: 10px;
-        width: 14px;
-        height: 4px;
+        left: 23px;
+        bottom: 14px;
+        width: 19px;
+        height: 5px;
         border-radius: 999px;
         background: #38133c;
         opacity: 0.7;
@@ -155,21 +155,21 @@
 
       .body {
         position: absolute;
-        left: 22px;
-        top: 48px;
-        width: 70px;
-        height: 72px;
-        border: 4px solid #ff5c9a;
-        border-radius: 18px;
+        left: 25px;
+        top: 66px;
+        width: 98px;
+        height: 94px;
+        border: 5px solid #ff5c9a;
+        border-radius: 22px;
         background: linear-gradient(135deg, #ff5c9a, #6f2372);
       }
 
       .arm {
         position: absolute;
-        left: 78px;
-        top: 58px;
-        width: 82px;
-        height: 16px;
+        left: 112px;
+        top: 82px;
+        width: 122px;
+        height: 22px;
         border-radius: 999px;
         background: #ffc47a;
         transform-origin: 0 50%;
@@ -179,9 +179,9 @@
 
       .leg {
         position: absolute;
-        top: 116px;
-        width: 68px;
-        height: 16px;
+        top: 158px;
+        width: 88px;
+        height: 21px;
         border-radius: 999px;
         background: #44ddca;
       }
@@ -192,19 +192,19 @@
       }
 
       .leg.two {
-        left: 46px;
+        left: 64px;
         transform: rotate(-8deg);
       }
 
       .bin {
         position: absolute;
-        right: 96px;
-        bottom: 76px;
-        width: 82px;
-        height: 110px;
-        border: 5px solid #44ddca;
-        border-top: 10px solid #44ddca;
-        border-radius: 8px 8px 20px 20px;
+        right: 102px;
+        bottom: 86px;
+        width: 132px;
+        height: 164px;
+        border: 7px solid #44ddca;
+        border-top: 16px solid #44ddca;
+        border-radius: 12px 12px 28px 28px;
         background: linear-gradient(180deg, rgba(68, 221, 202, 0.16), rgba(68, 221, 202, 0.04));
         box-shadow: 0 0 24px rgba(68, 221, 202, 0.18);
       }
@@ -212,47 +212,91 @@
       .bin:before {
         content: "";
         position: absolute;
-        left: -14px;
-        right: -14px;
-        top: -20px;
-        height: 10px;
+        left: -22px;
+        right: -22px;
+        top: -28px;
+        height: 15px;
         border-radius: 999px;
         background: #44ddca;
       }
 
+      .bin-label {
+        position: absolute;
+        right: 88px;
+        bottom: 260px;
+        width: 180px;
+        color: #44ddca;
+        font-size: 20px;
+        font-weight: 900;
+        text-align: center;
+        text-shadow: 0 0 16px rgba(68, 221, 202, 0.55);
+      }
+
+      .throw-line {
+        position: absolute;
+        left: 365px;
+        top: 132px;
+        width: 332px;
+        height: 145px;
+        border-top: 4px dashed rgba(255, 209, 102, 0.42);
+        border-radius: 50%;
+        transform: rotate(-9deg);
+      }
+
       .paper {
         position: absolute;
-        left: 283px;
-        top: 172px;
-        width: 22px;
-        height: 22px;
-        border: 2px solid #fff7fb;
+        left: 360px;
+        top: 214px;
+        width: 34px;
+        height: 34px;
+        border: 3px solid #fff7fb;
         border-radius: 45% 55% 48% 52%;
         background: linear-gradient(135deg, #ffffff, #d9c3dd);
         box-shadow: 0 0 18px rgba(255, 255, 255, 0.26);
         animation: throwBall 7.4s linear forwards;
       }
 
+      .paper:after {
+        content: "";
+        position: absolute;
+        inset: 8px 5px 5px 8px;
+        border-left: 2px solid rgba(95, 35, 104, 0.45);
+        border-top: 2px solid rgba(95, 35, 104, 0.45);
+        transform: rotate(23deg);
+      }
+
       .attempt {
         position: absolute;
-        left: 292px;
-        bottom: 46px;
-        min-width: 150px;
-        padding: 9px 12px;
-        border: 1px solid rgba(255, 209, 102, 0.35);
-        border-radius: 10px;
+        left: 350px;
+        bottom: 48px;
+        min-width: 230px;
+        padding: 12px 16px;
+        border: 2px solid rgba(255, 209, 102, 0.55);
+        border-radius: 12px;
         background: rgba(255, 209, 102, 0.09);
         color: #ffd166;
+        font-size: 18px;
         font-weight: 800;
+        text-align: center;
+      }
+
+      .result {
+        position: absolute;
+        right: 80px;
+        bottom: 44px;
+        width: 230px;
+        color: #fff7fb;
+        font-size: 15px;
+        font-weight: 750;
         text-align: center;
       }
 
       .progress {
         position: absolute;
-        left: 28px;
-        right: 28px;
-        bottom: 18px;
-        height: 9px;
+        left: 34px;
+        right: 34px;
+        bottom: 20px;
+        height: 12px;
         border: 1px solid rgba(255, 189, 219, 0.22);
         border-radius: 999px;
         overflow: hidden;
@@ -277,15 +321,15 @@
       }
 
       @keyframes throwBall {
-        0% { left: 283px; top: 172px; opacity: 1; }
-        17% { left: 462px; top: 116px; }
-        27% { left: 524px; top: 245px; }
-        32% { left: 283px; top: 172px; }
-        50% { left: 456px; top: 106px; }
-        60% { left: 575px; top: 254px; }
-        65% { left: 283px; top: 172px; }
-        84% { left: 516px; top: 118px; }
-        94%, 100% { left: 556px; top: 226px; opacity: 1; }
+        0% { left: 360px; top: 214px; opacity: 1; transform: rotate(0deg) scale(1); }
+        17% { left: 584px; top: 128px; transform: rotate(230deg) scale(1.1); }
+        27% { left: 682px; top: 332px; transform: rotate(420deg) scale(0.95); }
+        32% { left: 360px; top: 214px; transform: rotate(0deg) scale(1); }
+        50% { left: 578px; top: 116px; transform: rotate(260deg) scale(1.1); }
+        60% { left: 748px; top: 330px; transform: rotate(460deg) scale(0.95); }
+        65% { left: 360px; top: 214px; transform: rotate(0deg) scale(1); }
+        84% { left: 660px; top: 132px; transform: rotate(270deg) scale(1.12); }
+        94%, 100% { left: 715px; top: 292px; opacity: 1; transform: rotate(540deg) scale(0.85); }
       }
 
       @keyframes fill {
@@ -314,18 +358,28 @@
           <div class="leg one"></div>
           <div class="leg two"></div>
         </div>
+        <div class="throw-line"></div>
         <div class="paper"></div>
+        <div class="bin-label">PRULLENBAK</div>
         <div class="bin"></div>
         <div class="attempt" id="attempt">Poging 1... te lui gemikt</div>
+        <div class="result" id="result">Je ziet hem drie keer gooien. De derde is raak.</div>
       </div>
       <div class="progress"><div class="bar"></div></div>
     </div>
 
     <script type="text/javascript">
-      window.resizeTo(736, 470);
+      window.resizeTo(936, 600);
       var attempt = document.getElementById("attempt");
-      setTimeout(function () { attempt.innerText = "Poging 2... net ernaast"; }, 2600);
-      setTimeout(function () { attempt.innerText = "Poging 3... raak. Installatie klaar."; }, 5250);
+      var result = document.getElementById("result");
+      setTimeout(function () {
+        attempt.innerText = "Poging 2... net ernaast";
+        result.innerText = "Nog niet. Hij doet alsof dit gepland was.";
+      }, 2600);
+      setTimeout(function () {
+        attempt.innerText = "Poging 3... RAAK";
+        result.innerText = "Raak. Ketel Mail is klaar om te starten.";
+      }, 5250);
       setTimeout(function () { window.close(); }, 7700);
     </script>
   </body>

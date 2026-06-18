@@ -638,8 +638,9 @@ function loadAutoTranslateSetting() {
 const defaultSignatureSettings = {
   autoInsert: true,
   defaultFormat: "text",
-  text: "Met vriendelijke groet,",
-  html: "<p>Met vriendelijke groet,</p>"
+  settingsVersion: 2,
+  text: "Met vriendelijke groet,\n\nMedewerker @ deHeksenketel.com",
+  html: "<p>Met vriendelijke groet,</p><p>Medewerker @ deHeksenketel.com</p>"
 };
 
 function normalizeSignatureSettings(settings = {}) {
@@ -653,7 +654,11 @@ function normalizeSignatureSettings(settings = {}) {
 
 function loadSignatureSettings() {
   try {
-    return normalizeSignatureSettings(JSON.parse(localStorage.getItem("ketelmeel-signature-settings") || "{}"));
+    const parsed = JSON.parse(localStorage.getItem("ketelmeel-signature-settings") || "{}");
+    if (!parsed.settingsVersion && (!parsed.text || parsed.text === "Met vriendelijke groet,")) {
+      return defaultSignatureSettings;
+    }
+    return normalizeSignatureSettings(parsed);
   } catch {
     return defaultSignatureSettings;
   }
@@ -2213,6 +2218,9 @@ function App() {
           <button className="icon-button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label="Thema">
             {theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}
           </button>
+          <button className="icon-button" onClick={() => window.location.reload()} aria-label="Ketel Mail app herladen" title="Ketel Mail app herladen">
+            <RefreshCw size={19} />
+          </button>
           <button className="icon-button" onClick={() => setSettingsOpen(true)} aria-label="Instellingen">
             <Settings size={19} />
           </button>
@@ -2559,7 +2567,7 @@ function GovernmentFeedTicker({ feed, settings, index, onRefresh }) {
           <div className="government-feed-track">
             {marqueeItems.map((item, itemIndex) => {
               const itemTime = item.date ? new Date(item.date).getTime() : 0;
-              const isLatest = itemTime && itemTime === latestTime && itemIndex < items.length;
+              const isLatest = itemIndex === 0 && itemTime && itemTime === latestTime;
               const when = item.date ? formatFeedDate(item.date) : refreshed;
               return (
                 <a
@@ -3327,8 +3335,8 @@ function AppearancePanel({ appearance, onChange }) {
       setLogoError("Kies een afbeelding als logo.");
       return;
     }
-    if (file.size > 1.5 * 1024 * 1024) {
-      setLogoError("Logo is te groot. Gebruik maximaal 1,5 MB.");
+    if (file.size > 8 * 1024 * 1024) {
+      setLogoError("Logo is te groot. Gebruik maximaal 8 MB.");
       return;
     }
 
@@ -3384,7 +3392,7 @@ function AppearancePanel({ appearance, onChange }) {
       <div className="logo-settings">
         <div className="logo-preview">
           <div className="brand-mark logo-preview-mark" style={{ "--brand-logo-size": `${appearance.logoSize}px` }}>
-            <img src={previewLogoUrl} alt="Ketel Mail logo voorbeeld" />
+            <img src={previewLogoUrl} alt="Ketel Mail logo voorbeeld" onError={(event) => (event.currentTarget.src = defaultLogoUrl)} />
           </div>
           <div>
             <strong>Eigen logo</strong>
