@@ -2073,6 +2073,7 @@ body.resizing-message-list {
   border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
   border-radius: 8px;
   background:
+    linear-gradient(90deg, var(--accent), var(--sky), var(--gold)) top left / 100% 4px no-repeat,
     linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 230px),
     var(--panel);
   box-shadow:
@@ -2080,19 +2081,10 @@ body.resizing-message-list {
     inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
-.content-grid.has-open-message .reader::before {
-  content: "";
-  position: sticky;
-  top: 0;
-  z-index: 4;
-  display: block;
-  height: 4px;
-  margin: calc(var(--reader-padding, clamp(18px, 3vw, 36px)) * -1) calc(var(--reader-padding, clamp(18px, 3vw, 36px)) * -1) 18px;
-  border-radius: 8px 8px 0 0;
-  background: linear-gradient(90deg, var(--accent), var(--sky), var(--gold));
-}
-
 .reader-toolbar {
+  position: relative;
+  z-index: 1;
+  display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 18px;
