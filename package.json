@@ -1,6 +1,7 @@
 {
-  "name": "ketelmeel",
+  "name": "ketel-mail",
   "version": "0.1.0",
+  "description": "Zelf-hostbare webmail-app met desktopvenster voor Ketel Mail.",
   "private": true,
   "type": "module",
   "main": "electron/main.cjs",
@@ -16,7 +17,20 @@
     "dist:desktop": "npm run build && electron-builder",
     "dist:win": "npm run build && electron-builder --win nsis portable",
     "dist:linux": "npm run build && electron-builder --linux AppImage deb",
-    "dist:mac": "npm run build && electron-builder --mac dmg zip"
+    "dist:mac": "npm run build && electron-builder --mac dmg zip",
+    "screenshots": "electron scripts/capture-screenshots.cjs",
+    "setup:debian": "sh ./install-debian-parrot.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Deus73/Ketel_Mail.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Deus73/Ketel_Mail/issues"
+  },
+  "homepage": "https://github.com/Deus73/Ketel_Mail#readme",
+  "engines": {
+    "node": ">=20"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.1.1",

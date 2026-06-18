@@ -1,0 +1,18 @@
+# Secrets and local runtime settings
+.env
+.env.local
+*.log
+
+# Dependencies and generated package output
+node_modules/
+release/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Temporary local artifacts
+*.tmp
+*.bak

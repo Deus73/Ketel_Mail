@@ -2,6 +2,21 @@
 
 Ketel Mail is een gratis, zelf-hostbare webmail-app voor je eigen server. De app start standaard met een demo-inbox, zodat je direct kunt kijken hoe hij werkt. Zet `DEMO_MODE=false` en vul IMAP/SMTP-gegevens in om hem met een echte mailbox te gebruiken.
 
+## Snel starten op Debian / ParrotOS
+
+```bash
+chmod +x install-debian-parrot.sh start-debian-parrot.sh
+./install-debian-parrot.sh
+./start-debian-parrot.sh
+```
+
+Als Electron systeemlibs mist:
+
+```bash
+sudo apt update
+sudo apt install -y nodejs npm libgtk-3-0 libnss3 libxss1 libasound2 libatk-bridge2.0-0 libdrm2 libgbm1
+```
+
 ## Screenshots
 
 ![Ketel Mail inbox](docs/screenshots/ketel-mail-inbox.png)
@@ -51,6 +66,14 @@ npm run dist:mac
 
 De builds komen in `release/`. Bouw macOS-installers het liefst op macOS; Windows- en Linux-builds kunnen vanaf hun eigen OS worden gemaakt.
 
+## Screenshots verversen
+
+Zorg dat Ketel Mail lokaal draait op `http://127.0.0.1:8080` en run:
+
+```bash
+npm run screenshots
+```
+
 ## Docker
 
 ```bash
@@ -73,4 +96,4 @@ Ketel Mail is de webmail-laag. Voor echte mailhosting heb je daarnaast een mails
 
 ## Belangrijk
 
-Deze eerste versie gebruikt server-side env-instellingen voor één mailbox. Voor meerdere gebruikers kun je later login, sessies en per-gebruiker IMAP/SMTP instellingen toevoegen.
+Deze versie gebruikt server-side env-instellingen voor één live mailbox tegelijk. Zet echte mailgegevens alleen in je eigen `.env`; commit die nooit naar GitHub.
