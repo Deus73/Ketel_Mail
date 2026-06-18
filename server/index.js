@@ -1,4 +1,5 @@
 import express from "express";
+import compression from "compression";
 import fs from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
@@ -25,6 +26,15 @@ const governmentFeedRefreshMs = 110000;
 const governmentFeedCache = new Map();
 const folderCacheMs = 300000;
 const folderListCache = new Map();
+const messageListCacheMs = 20000;
+const messageListCache = new Map();
+const imapKeepAliveMs = 180000;
+const imapSession = {
+  key: "",
+  client: null,
+  connecting: null,
+  closeTimer: null
+};
 const languageCodeMap = {
   afr: "af",
   ara: "ar",
@@ -196,6 +206,7 @@ app.use("/api", (_req, res, next) => {
   res.setHeader("Pragma", "no-cache");
   next();
 });
+app.use(compression({ threshold: 1024 }));
 app.use(express.json({ limit: "1mb" }));
 
 await fs.mkdir(dataRoot, { recursive: true });
@@ -393,6 +404,7 @@ async function saveSettings(settings) {
 
   await fs.writeFile(envPath, content, "utf8");
   Object.assign(process.env, next);
+  clearRuntimeMailState();
   return safeSettings();
 }
 
@@ -1028,8 +1040,11 @@ async function runDiagnostics() {
   return diagnostics;
 }
 
-async function withImap(fn) {
-  const cfg = requireRealConfig();
+function imapConfigKey(cfg) {
+  return `${cfg.user}@${cfg.imapHost}:${cfg.imapPort}:${cfg.imapSecure ? "tls" : "plain"}`;
+}
+
+function createImapClient(cfg) {
   const client = new ImapFlow({
     host: cfg.imapHost,
     port: cfg.imapPort,
@@ -1040,7 +1055,71 @@ async function withImap(fn) {
     socketTimeout: mailTimeoutMs,
     logger: false
   });
-  client.on("error", () => {});
+  client.on("error", () => {
+    if (imapSession.client === client) clearRuntimeMailState(false);
+  });
+  client.on("close", () => {
+    if (imapSession.client === client) clearRuntimeMailState(false);
+  });
+  return client;
+}
+
+async function closeImapSession() {
+  if (imapSession.closeTimer) windowClearTimeout(imapSession.closeTimer);
+  const client = imapSession.client;
+  imapSession.key = "";
+  imapSession.client = null;
+  imapSession.connecting = null;
+  imapSession.closeTimer = null;
+  if (client) await client.logout().catch(() => {});
+}
+
+function windowClearTimeout(timer) {
+  if (timer) clearTimeout(timer);
+}
+
+function clearRuntimeMailState(closeSession = true) {
+  folderListCache.clear();
+  messageListCache.clear();
+  if (closeSession) {
+    closeImapSession().catch(() => {});
+    return;
+  }
+  windowClearTimeout(imapSession.closeTimer);
+  imapSession.key = "";
+  imapSession.client = null;
+  imapSession.connecting = null;
+  imapSession.closeTimer = null;
+}
+
+function scheduleImapClose() {
+  windowClearTimeout(imapSession.closeTimer);
+  imapSession.closeTimer = setTimeout(() => {
+    closeImapSession();
+  }, imapKeepAliveMs);
+  if (typeof imapSession.closeTimer.unref === "function") imapSession.closeTimer.unref();
+}
+
+async function getSharedImapClient(cfg) {
+  const key = imapConfigKey(cfg);
+  if (imapSession.client && imapSession.key === key) {
+    if (imapSession.connecting) await imapSession.connecting;
+    scheduleImapClose();
+    return imapSession.client;
+  }
+
+  await closeImapSession();
+  imapSession.key = key;
+  imapSession.client = createImapClient(cfg);
+  imapSession.connecting = imapSession.client.connect();
+  await imapSession.connecting;
+  imapSession.connecting = null;
+  scheduleImapClose();
+  return imapSession.client;
+}
+
+async function withFreshImap(fn, cfg) {
+  const client = createImapClient(cfg);
   let connected = false;
   try {
     await client.connect();
@@ -1048,6 +1127,19 @@ async function withImap(fn) {
     return await fn(client, cfg);
   } finally {
     if (connected) await client.logout().catch(() => {});
+  }
+}
+
+async function withImap(fn, options = {}) {
+  const cfg = requireRealConfig();
+  if (options.fresh) return withFreshImap(fn, cfg);
+
+  try {
+    const client = await getSharedImapClient(cfg);
+    return await fn(client, cfg);
+  } catch (error) {
+    await closeImapSession();
+    throw error;
   }
 }
 
@@ -1073,6 +1165,17 @@ async function listFoldersFromClient(client) {
 
 function folderCacheKey(cfg) {
   return `${cfg.user}@${cfg.imapHost}:${cfg.imapPort}`;
+}
+
+function messageCacheKey(cfg, folder, limit) {
+  return `${folderCacheKey(cfg)}:${folder}:${limit}`;
+}
+
+function clearMessageCachesForFolder(cfg, folder) {
+  const prefix = cfg ? `${folderCacheKey(cfg)}:${folder}:` : "";
+  for (const key of messageListCache.keys()) {
+    if (!cfg || key.startsWith(prefix)) messageListCache.delete(key);
+  }
 }
 
 async function cachedFoldersFromClient(client, cfg, force = false) {
@@ -1118,6 +1221,15 @@ async function fetchMessageList(client, folder, limit = 40) {
   } finally {
     lock.release();
   }
+}
+
+async function cachedMessageListFromClient(client, cfg, folder, limit = 40, force = false) {
+  const key = messageCacheKey(cfg, folder, limit);
+  const cached = messageListCache.get(key);
+  if (!force && cached && Date.now() - cached.fetchedAt < messageListCacheMs) return cached.messages;
+  const messages = await fetchMessageList(client, folder, limit);
+  messageListCache.set(key, { fetchedAt: Date.now(), messages });
+  return messages;
 }
 
 app.get("/api/status", (_req, res) => {
@@ -1189,7 +1301,7 @@ app.get("/api/mailbox", async (req, res, next) => {
     const mailbox = await withImap(async (client, cfg) => {
       const folders = await cachedFoldersFromClient(client, cfg, req.query.refresh === "1");
       const folder = preferredFolder(requestedFolder, folders);
-      const messages = await fetchMessageList(client, folder, limit);
+      const messages = await cachedMessageListFromClient(client, cfg, folder, limit, req.query.refresh === "1");
       return { folders, folder, messages };
     });
 
@@ -1220,8 +1332,8 @@ app.get("/api/messages", async (req, res, next) => {
     if (isDemoMode()) {
       return res.json(demoMessages.filter((message) => message.folder === folder).slice(0, limit));
     }
-    const messages = await withImap(async (client) => {
-      return fetchMessageList(client, folder, limit);
+    const messages = await withImap(async (client, cfg) => {
+      return cachedMessageListFromClient(client, cfg, folder, limit, req.query.refresh === "1");
     });
     res.json(messages);
   } catch (error) {
@@ -1284,9 +1396,9 @@ app.post("/api/messages/:folder/:id/move", async (req, res, next) => {
       return res.json({ ok: true, demo: true, id, folder, targetFolder });
     }
 
-    const result = await withImap(async (client) => {
-      const folders = await client.list();
-      if (!folders.some((box) => box.path === targetFolder)) {
+    const result = await withImap(async (client, cfg) => {
+      const folders = await cachedFoldersFromClient(client, cfg);
+      if (!folders.includes(targetFolder)) {
         const err = new Error("Doelmap niet gevonden.");
         err.status = 404;
         throw err;
@@ -1308,6 +1420,8 @@ app.post("/api/messages/:folder/:id/move", async (req, res, next) => {
           throw err;
         }
         const movedUid = moveResult.uidMap?.get(uid) || uid;
+        clearMessageCachesForFolder(cfg, folder);
+        clearMessageCachesForFolder(cfg, targetFolder);
         return { id: String(movedUid), folder, targetFolder };
       } finally {
         lock.release();
@@ -1386,9 +1500,8 @@ app.post("/api/spam-cleaner", async (req, res, next) => {
       return res.json({ ok: true, demo: true, folder, removed });
     }
 
-    const result = await withImap(async (client) => {
-      const boxes = await client.list();
-      const folders = boxes.map((box) => box.path);
+    const result = await withImap(async (client, cfg) => {
+      const folders = await cachedFoldersFromClient(client, cfg);
       const folder = requestedFolder || findSpamFolderName(folders);
 
       if (!folder) {
@@ -1407,6 +1520,7 @@ app.post("/api/spam-cleaner", async (req, res, next) => {
       try {
         const removed = client.mailbox.exists || 0;
         if (removed > 0) await client.messageDelete("1:*");
+        clearMessageCachesForFolder(cfg, folder);
         return { folder, removed };
       } finally {
         lock.release();
@@ -1459,7 +1573,15 @@ app.post("/api/send", async (req, res, next) => {
   }
 });
 
-app.use(express.static(path.join(root, "dist")));
+app.use(
+  express.static(path.join(root, "dist"), {
+    setHeaders(res, filePath) {
+      if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      }
+    }
+  })
+);
 app.get(/.*/, (_req, res) => res.sendFile(path.join(root, "dist", "index.html")));
 
 app.use((error, _req, res, _next) => {

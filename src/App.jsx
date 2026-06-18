@@ -1053,13 +1053,15 @@ function App() {
   const messageRequestRef = useRef(0);
   const mailboxOptions = useMemo(() => normalizeSenderOptions(senderSettings, status.mailbox), [senderSettings, status.mailbox]);
 
-  async function loadMailbox(folder = activeFolder) {
+  async function loadMailbox(folder = activeFolder, options = {}) {
     const requestId = mailboxRequestRef.current + 1;
     mailboxRequestRef.current = requestId;
     setLoading(true);
     setConnectionError("");
     try {
-      const mailbox = await api(`/api/mailbox?folder=${encodeURIComponent(folder)}&limit=40`);
+      const params = new URLSearchParams({ folder, limit: "40" });
+      if (options.refresh) params.set("refresh", "1");
+      const mailbox = await api(`/api/mailbox?${params.toString()}`);
       if (mailboxRequestRef.current !== requestId) return;
       const nextStatus = mailbox.status || { mode: "demo", mailbox: "demo@ketelmeel.local", configComplete: true };
       setStatus(nextStatus);
@@ -1519,7 +1521,7 @@ function App() {
         setSelectedMessage(null);
       }
 
-      await loadMailbox(activeFolder);
+      await loadMailbox(activeFolder, { refresh: true });
       setToast(`Bericht verplaatst naar ${nextFolder}.`);
     } catch (error) {
       setToast(error.message);
@@ -1542,7 +1544,7 @@ function App() {
     setActiveSmartFolder("");
 
     if (mailbox === status.mailbox) {
-      await loadMailbox(activeFolder);
+      await loadMailbox(activeFolder, { refresh: true });
       setToast(`Mailbox geopend: ${mailbox}`);
       return;
     }
@@ -1626,7 +1628,7 @@ function App() {
           : `Spam opruimer klaar: ${result.removed} berichten verwijderd uit ${result.folder}.`
       );
       setFolderMenu(null);
-      if (activeFolder === result.folder) await loadMailbox(result.folder);
+      if (activeFolder === result.folder) await loadMailbox(result.folder, { refresh: true });
     } catch (error) {
       setToast(error.message);
     } finally {
@@ -1905,7 +1907,7 @@ function App() {
           <button className="icon-button" onClick={() => setCommandOpen(true)} aria-label="Command center">
             <Command size={19} />
           </button>
-          <button className="icon-button" onClick={() => loadMailbox(activeFolder)} aria-label="Vernieuw">
+          <button className="icon-button" onClick={() => loadMailbox(activeFolder, { refresh: true })} aria-label="Vernieuw">
             <RefreshCw size={19} />
           </button>
           <button className="icon-button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label="Thema">
