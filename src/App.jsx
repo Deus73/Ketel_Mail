@@ -1999,7 +1999,7 @@ function App() {
           </section>
         ) : null}
 
-        <div className="content-grid">
+        <div className={`content-grid ${selectedEnriched ? "has-open-message" : ""}`}>
           <section className="message-list" aria-label="Berichten">
             <button
               type="button"

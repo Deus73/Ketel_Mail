@@ -163,6 +163,34 @@ a:focus-visible {
     var(--panel);
 }
 
+.app-shell.dark .content-grid.has-open-message {
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.28), transparent 26%),
+    color-mix(in srgb, var(--bg) 72%, #000000);
+}
+
+.app-shell.dark .content-grid.has-open-message .message-list,
+.app-shell.dark .content-grid.has-open-message .right-rail {
+  opacity: 0.66;
+  filter: saturate(0.76) brightness(0.86);
+}
+
+.app-shell.dark .content-grid.has-open-message .message-list:hover,
+.app-shell.dark .content-grid.has-open-message .right-rail:hover {
+  opacity: 1;
+  filter: none;
+}
+
+.app-shell.dark .content-grid.has-open-message .reader {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 9%, transparent), transparent 240px),
+    color-mix(in srgb, var(--panel) 96%, #000000);
+  box-shadow:
+    0 22px 70px rgba(0, 0, 0, 0.46),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+}
+
 .sidebar {
   position: relative;
   display: flex;
@@ -958,6 +986,25 @@ dt,
   height: 100%;
   min-height: 0;
   overflow: hidden;
+}
+
+.content-grid.has-open-message {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--panel-deep) 34%, transparent), transparent 22%),
+    color-mix(in srgb, var(--bg) 62%, var(--panel));
+}
+
+.content-grid.has-open-message .message-list,
+.content-grid.has-open-message .right-rail {
+  opacity: 0.74;
+  filter: saturate(0.82);
+  transition: opacity 160ms ease, filter 160ms ease;
+}
+
+.content-grid.has-open-message .message-list:hover,
+.content-grid.has-open-message .right-rail:hover {
+  opacity: 1;
+  filter: none;
 }
 
 .app-shell.layout-focus {
@@ -2012,11 +2059,37 @@ body.resizing-message-list {
 }
 
 .reader {
+  position: relative;
   min-width: 0;
   min-height: 0;
   overflow: auto;
   padding: var(--reader-padding, clamp(18px, 3vw, 36px));
   background: var(--panel);
+}
+
+.content-grid.has-open-message .reader {
+  z-index: 2;
+  margin: 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 230px),
+    var(--panel);
+  box-shadow:
+    0 20px 60px rgba(15, 23, 42, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.content-grid.has-open-message .reader::before {
+  content: "";
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: block;
+  height: 4px;
+  margin: calc(var(--reader-padding, clamp(18px, 3vw, 36px)) * -1) calc(var(--reader-padding, clamp(18px, 3vw, 36px)) * -1) 18px;
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(90deg, var(--accent), var(--sky), var(--gold));
 }
 
 .reader-toolbar {
@@ -2095,11 +2168,25 @@ body.resizing-message-list {
   border-bottom: 1px solid var(--border);
 }
 
+.content-grid.has-open-message .reader-header {
+  padding: 16px 16px 20px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 9%, transparent), transparent 60%),
+    color-mix(in srgb, var(--panel-soft) 72%, var(--panel));
+}
+
 .reader-header h1 {
   max-width: 900px;
   margin: 8px 0;
   font-size: var(--reader-title-size, clamp(25px, 3vw, 42px));
   line-height: 1.08;
+}
+
+.content-grid.has-open-message .reader-header h1 {
+  color: var(--ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .reply-button {
@@ -2222,6 +2309,15 @@ body.resizing-message-list {
   overflow: hidden;
   background: #ffffff;
   box-shadow: 0 10px 30px rgba(23, 32, 29, 0.08);
+}
+
+.content-grid.has-open-message .email-frame-wrap,
+.content-grid.has-open-message .message-body,
+.content-grid.has-open-message .source-view pre,
+.content-grid.has-open-message .translation-panel,
+.content-grid.has-open-message .attachments {
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.11);
 }
 
 .email-frame-wrap iframe {
@@ -4070,6 +4166,10 @@ body.resizing-message-list {
 
   .reader {
     min-height: 62vh;
+  }
+
+  .content-grid.has-open-message .reader {
+    margin: 8px;
   }
 
   .message-list {
