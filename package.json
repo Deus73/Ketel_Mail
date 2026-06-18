@@ -2,6 +2,7 @@
   "name": "ketel-mail",
   "version": "0.1.0",
   "description": "Zelf-hostbare webmail-app met desktopvenster voor Ketel Mail.",
+  "author": "Deus73",
   "private": true,
   "type": "module",
   "main": "electron/main.cjs",
@@ -15,7 +16,7 @@
     "desktop:fast": "electron .",
     "pack:desktop": "npm run build && electron-builder --dir",
     "dist:desktop": "npm run build && electron-builder",
-    "dist:win": "npm run build && electron-builder --win nsis portable",
+    "dist:win": "npm run build && electron-builder --win nsis",
     "dist:linux": "npm run build && electron-builder --linux AppImage deb",
     "dist:mac": "npm run build && electron-builder --mac dmg zip",
     "screenshots": "electron scripts/capture-screenshots.cjs",
@@ -53,9 +54,11 @@
   "build": {
     "appId": "com.ketelmail.desktop",
     "productName": "Ketel Mail",
+    "compression": "maximum",
     "directories": {
       "output": "release"
     },
+    "artifactName": "Ketel-Mail-Setup-${version}.${ext}",
     "files": [
       "dist/**/*",
       "server/**/*",
@@ -67,10 +70,9 @@
       "main": "electron/main.cjs"
     },
     "win": {
-      "icon": "public/icons/ketel-mail-icon.png",
+      "icon": "public/icons/ketel-mail-icon.ico",
       "target": [
-        "nsis",
-        "portable"
+        "nsis"
       ]
     },
     "linux": {
@@ -90,8 +92,14 @@
       "category": "public.app-category.productivity"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Ketel Mail",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
     }
   }
 }

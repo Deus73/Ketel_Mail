@@ -65,6 +65,13 @@ if ($LASTEXITCODE -gt 7) {
   throw "Kopieren naar de installatiemap is mislukt."
 }
 
+$envFile = Join-Path $installApp ".env"
+$envExample = Join-Path $installApp ".env.example"
+if (-not (Test-Path $envFile) -and (Test-Path $envExample)) {
+  Copy-Item -LiteralPath $envExample -Destination $envFile
+  Write-Host "Eerste veilige instellingen aangemaakt. Je kunt echte mailaccounts later in Ketel Mail toevoegen." -ForegroundColor DarkCyan
+}
+
 Write-Step "Pakketten en desktopvenster voorbereiden"
 Push-Location $installApp
 try {

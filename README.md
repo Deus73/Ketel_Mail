@@ -43,6 +43,16 @@ Voor Windows zit er een visuele installatiepagina bij:
 
 De installer zet Ketel Mail in `%LOCALAPPDATA%\Ketel Mail\app`, bouwt de app, maakt een bureaublad- en startmenu-snelkoppeling en start het eigen desktopvenster. Windows laat taakbalk-vastpinnen niet betrouwbaar stilletjes toe; klik na het starten met rechts op Ketel Mail in de taakbalk en kies `Aan taakbalk vastmaken`.
 
+## Echte Windows .exe installer
+
+Voor collega's is de makkelijkste route het ene bestand:
+
+```text
+release/Ketel-Mail-Setup-0.1.0.exe
+```
+
+Die installeert Ketel Mail als desktop-app, maakt snelkoppelingen en start de app na installatie. De installer is bedoeld voor moderne 64-bit Windows-systemen. Echte mailboxen voeg je daarna in Ketel Mail toe via Instellingen, Mailaccounts.
+
 ## Productie draaien
 
 ```bash
