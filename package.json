@@ -20,6 +20,7 @@
     "dist:linux": "npm run build && electron-builder --linux AppImage deb",
     "dist:mac": "npm run build && electron-builder --mac dmg zip",
     "screenshots": "electron scripts/capture-screenshots.cjs",
+    "icon:select": "node scripts/select-app-icon.mjs",
     "setup:debian": "sh ./install-debian-parrot.sh"
   },
   "repository": {
