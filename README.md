@@ -32,6 +32,17 @@ npm run dev
 
 Open daarna `http://localhost:5173`.
 
+## Magische Windows-installatie
+
+Voor Windows zit er een visuele installatiepagina bij:
+
+1. Pak de zip uit.
+2. Open `install.html`.
+3. Gooi alle stofjes/elementen in de ketel.
+4. Klik op `Installeer Ketel Mail`.
+
+De installer zet Ketel Mail in `%LOCALAPPDATA%\Ketel Mail\app`, bouwt de app, maakt een bureaublad- en startmenu-snelkoppeling en start het eigen desktopvenster. Windows laat taakbalk-vastpinnen niet betrouwbaar stilletjes toe; klik na het starten met rechts op Ketel Mail in de taakbalk en kies `Aan taakbalk vastmaken`.
+
 ## Productie draaien
 
 ```bash

@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ketel Mail installeren</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #110716;
+        --panel: #211126;
+        --ink: #fff7fb;
+        --muted: #d9c3dd;
+        --accent: #ff5c9a;
+        --sky: #44ddca;
+        --gold: #ffd166;
+        --line: rgba(255, 189, 219, 0.26);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background:
+          radial-gradient(circle at 18% 10%, rgba(255, 92, 154, 0.22), transparent 280px),
+          radial-gradient(circle at 82% 12%, rgba(68, 221, 202, 0.16), transparent 260px),
+          linear-gradient(145deg, #130818, #08050c 60%, #15100b);
+        color: var(--ink);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main {
+        display: grid;
+        grid-template-columns: minmax(280px, 0.85fr) minmax(320px, 1.15fr);
+        gap: 28px;
+        width: min(1180px, calc(100vw - 32px));
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: 34px 0;
+        align-items: center;
+      }
+
+      section,
+      aside {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+      }
+
+      section {
+        padding: clamp(20px, 3vw, 34px);
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(34px, 5vw, 70px);
+        line-height: 0.95;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.55;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 18px;
+        color: var(--gold);
+        font-weight: 850;
+      }
+
+      .brand img {
+        width: 42px;
+        height: 42px;
+        object-fit: contain;
+      }
+
+      .steps {
+        display: grid;
+        gap: 10px;
+        margin-top: 22px;
+      }
+
+      .steps div {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 42px;
+        padding: 9px 11px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.045);
+        color: var(--muted);
+      }
+
+      .steps strong {
+        color: var(--ink);
+      }
+
+      aside {
+        position: relative;
+        display: grid;
+        gap: 18px;
+        padding: 22px;
+        overflow: hidden;
+      }
+
+      .cauldron {
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-height: 430px;
+        isolation: isolate;
+      }
+
+      .steam {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(ellipse at 45% 18%, rgba(255, 255, 255, 0.16), transparent 34%),
+          radial-gradient(ellipse at 56% 23%, rgba(255, 92, 154, 0.18), transparent 32%),
+          radial-gradient(ellipse at 62% 14%, rgba(68, 221, 202, 0.14), transparent 28%);
+        filter: blur(9px);
+        animation: breathe 4s ease-in-out infinite;
+        z-index: -1;
+      }
+
+      .pot {
+        position: relative;
+        width: min(440px, 84vw);
+        aspect-ratio: 1.05;
+      }
+
+      .bowl {
+        position: absolute;
+        inset: 28% 5% 10%;
+        border: 5px solid #4b184d;
+        border-radius: 18% 18% 44% 44%;
+        background:
+          radial-gradient(circle at 50% 8%, var(--brew, rgba(68, 221, 202, 0.14)) 0 28%, transparent 29%),
+          linear-gradient(145deg, #37123c, #140818 64%, #08050c);
+        box-shadow: inset 0 18px 35px rgba(255, 255, 255, 0.07), 0 28px 50px rgba(0, 0, 0, 0.42);
+      }
+
+      .bowl::before {
+        content: "";
+        position: absolute;
+        left: 8%;
+        right: 8%;
+        top: -13%;
+        height: 24%;
+        border: 5px solid #6f2372;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--accent), var(--sky), var(--gold));
+        box-shadow: 0 0 34px rgba(255, 92, 154, 0.28);
+      }
+
+      .liquid {
+        position: absolute;
+        left: 15%;
+        right: 15%;
+        top: 21%;
+        height: var(--fill, 12%);
+        max-height: 45%;
+        border-radius: 999px;
+        background:
+          radial-gradient(circle at 25% 34%, rgba(255, 255, 255, 0.85) 0 8px, transparent 9px),
+          linear-gradient(90deg, var(--accent), var(--sky), var(--gold));
+        filter: drop-shadow(0 0 28px rgba(255, 92, 154, 0.38));
+        transition: height 400ms ease;
+      }
+
+      .spark {
+        position: absolute;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--gold);
+        box-shadow: 0 0 18px var(--gold);
+        animation: float 3.5s ease-in-out infinite;
+      }
+
+      .spark:nth-child(1) { left: 20%; top: 20%; }
+      .spark:nth-child(2) { right: 18%; top: 28%; animation-delay: 0.7s; background: var(--sky); }
+      .spark:nth-child(3) { left: 48%; top: 10%; animation-delay: 1.4s; background: var(--accent); }
+
+      .ingredients {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      button,
+      .install-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0 14px;
+        background: rgba(255, 255, 255, 0.07);
+        color: var(--ink);
+        font: inherit;
+        font-weight: 850;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      button:hover,
+      .install-link:hover {
+        border-color: rgba(255, 209, 102, 0.6);
+        background: rgba(255, 209, 102, 0.12);
+      }
+
+      button.done {
+        border-color: rgba(68, 221, 202, 0.52);
+        background: rgba(68, 221, 202, 0.12);
+      }
+
+      .result {
+        display: none;
+        gap: 12px;
+        padding: 14px;
+        border: 1px solid rgba(68, 221, 202, 0.36);
+        border-radius: 12px;
+        background: rgba(68, 221, 202, 0.09);
+      }
+
+      .result.ready {
+        display: grid;
+      }
+
+      .result strong {
+        color: var(--sky);
+      }
+
+      code {
+        padding: 2px 6px;
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.24);
+        color: var(--gold);
+      }
+
+      @keyframes breathe {
+        0%, 100% { opacity: 0.74; transform: translateY(0) scale(1); }
+        50% { opacity: 1; transform: translateY(-12px) scale(1.04); }
+      }
+
+      @keyframes float {
+        0%, 100% { transform: translateY(0); opacity: 0.55; }
+        50% { transform: translateY(-28px); opacity: 1; }
+      }
+
+      @media (max-width: 860px) {
+        main {
+          grid-template-columns: 1fr;
+          align-items: start;
+        }
+
+        .ingredients {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section>
+        <div class="brand">
+          <img src="public/icons/ketel-mail-icon.png" alt="" />
+          Ketel Mail
+        </div>
+        <h1>Gooi de magie in de ketel.</h1>
+        <p>
+          Deze pagina bereidt de lokale installatie voor. Als de ketel vol is start je de installer:
+          Ketel Mail wordt op je pc gezet, krijgt snelkoppelingen en opent daarna als eigen desktop-app.
+        </p>
+        <div class="steps">
+          <div><strong>1.</strong> Voeg alle ingredienten toe.</div>
+          <div><strong>2.</strong> Klik op installeren zodra de ketel vol is.</div>
+          <div><strong>3.</strong> Windows vraagt toestemming voor het installatiescript.</div>
+          <div><strong>4.</strong> Daarna open je Ketel Mail via bureaublad of startmenu.</div>
+        </div>
+      </section>
+
+      <aside>
+        <div class="cauldron" aria-live="polite">
+          <div class="steam"></div>
+          <div class="pot" aria-hidden="true">
+            <span class="spark"></span>
+            <span class="spark"></span>
+            <span class="spark"></span>
+            <div class="bowl">
+              <div class="liquid"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ingredients">
+          <button type="button" data-ingredient="mail">Mailstof</button>
+          <button type="button" data-ingredient="security">Beveiligingszout</button>
+          <button type="button" data-ingredient="desktop">Vensterkristal</button>
+          <button type="button" data-ingredient="shortcut">Snelkoppelingpoeder</button>
+          <button type="button" data-ingredient="settings">Instellingenmist</button>
+          <button type="button" data-ingredient="start">Startvuur</button>
+        </div>
+
+        <div class="result" id="result">
+          <strong>De ketel is vol. Ketel Mail is klaar om te installeren.</strong>
+          <span>Klik op de knop hieronder. Als je browser het bestand blokkeert, open dan handmatig <code>ketel-mail-installeren.cmd</code> uit deze map.</span>
+          <a class="install-link" href="ketel-mail-installeren.cmd">Installeer Ketel Mail</a>
+        </div>
+      </aside>
+    </main>
+
+    <script>
+      const buttons = [...document.querySelectorAll("[data-ingredient]")];
+      const liquid = document.querySelector(".liquid");
+      const result = document.getElementById("result");
+      const added = new Set();
+
+      function updatePot() {
+        const progress = added.size / buttons.length;
+        liquid.style.setProperty("--fill", `${12 + progress * 40}%`);
+        document.documentElement.style.setProperty("--brew", progress > 0.65 ? "rgba(255, 209, 102, 0.28)" : "rgba(68, 221, 202, 0.18)");
+        if (added.size === buttons.length) result.classList.add("ready");
+      }
+
+      buttons.forEach((button) => {
+        button.addEventListener("click", () => {
+          added.add(button.dataset.ingredient);
+          button.classList.add("done");
+          button.textContent = `${button.textContent.replace(" ✓", "")} ✓`;
+          updatePot();
+        });
+      });
+    </script>
+  </body>
+</html>
