@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Archive,
@@ -1049,13 +1049,19 @@ function App() {
   const [draggedMessage, setDraggedMessage] = useState(null);
   const [dragOverFolder, setDragOverFolder] = useState("");
   const [movingMessageKey, setMovingMessageKey] = useState("");
+  const mailboxRequestRef = useRef(0);
+  const messageRequestRef = useRef(0);
   const mailboxOptions = useMemo(() => normalizeSenderOptions(senderSettings, status.mailbox), [senderSettings, status.mailbox]);
 
   async function loadMailbox(folder = activeFolder) {
+    const requestId = mailboxRequestRef.current + 1;
+    mailboxRequestRef.current = requestId;
     setLoading(true);
     setConnectionError("");
     try {
-      const nextStatus = await api("/api/status");
+      const mailbox = await api(`/api/mailbox?folder=${encodeURIComponent(folder)}&limit=40`);
+      if (mailboxRequestRef.current !== requestId) return;
+      const nextStatus = mailbox.status || { mode: "demo", mailbox: "demo@ketelmeel.local", configComplete: true };
       setStatus(nextStatus);
       if (!nextStatus.configComplete) {
         setFolders(fallbackFolders);
@@ -1065,14 +1071,11 @@ function App() {
         setToast("Vul eerst je mailinstellingen in.");
         return;
       }
-      const nextFolders = await api("/api/folders");
+      const nextFolders = mailbox.folders || fallbackFolders;
       const usableFolders = nextFolders.length ? nextFolders : fallbackFolders;
-      const targetFolder =
-        usableFolders.includes(folder) || usableFolders.length === 0
-          ? folder
-          : usableFolders.find((name) => /^(inbox|postvak in)$/i.test(name)) || usableFolders[0];
+      const targetFolder = mailbox.folder || folder;
       if (targetFolder !== activeFolder) setActiveFolder(targetFolder);
-      const nextMessages = await api(`/api/messages?folder=${encodeURIComponent(targetFolder)}`);
+      const nextMessages = mailbox.messages || [];
       setFolders(usableFolders);
       setMessages(nextMessages);
       setSelectedId(nextMessages[0]?.id || null);
@@ -1085,7 +1088,7 @@ function App() {
         setSettingsOpen(true);
       }
     } finally {
-      setLoading(false);
+      if (mailboxRequestRef.current === requestId) setLoading(false);
     }
   }
 
@@ -1143,14 +1146,19 @@ function App() {
       setSelectedMessage(null);
       return;
     }
+    const requestId = messageRequestRef.current + 1;
+    messageRequestRef.current = requestId;
     api(`/api/messages/${encodeURIComponent(activeFolder)}/${encodeURIComponent(selectedId)}`)
       .then((message) => {
+        if (messageRequestRef.current !== requestId) return;
         setSelectedMessage(message);
         setMessages((current) =>
           current.map((item) => (item.id === selectedId && item.folder === activeFolder ? { ...item, read: true } : item))
         );
       })
-      .catch((error) => setToast(error.message));
+      .catch((error) => {
+        if (messageRequestRef.current === requestId) setToast(error.message);
+      });
   }, [activeFolder, selectedId]);
 
   useEffect(() => {

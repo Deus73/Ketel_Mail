@@ -23,6 +23,8 @@ const myMemoryMaxTranslateLength = 3000;
 const myMemoryUrl = "https://api.mymemory.translated.net/get";
 const governmentFeedRefreshMs = 110000;
 const governmentFeedCache = new Map();
+const folderCacheMs = 300000;
+const folderListCache = new Map();
 const languageCodeMap = {
   afr: "af",
   ara: "ar",
@@ -1049,15 +1051,77 @@ async function withImap(fn) {
   }
 }
 
-app.get("/api/status", (_req, res) => {
+function statusPayload() {
   const cfg = envConfig();
   const missing = ["user", "pass", "imapHost", "smtpHost"].filter((key) => !cfg[key]);
-  res.json({
+  return {
     mode: isDemoMode() ? "demo" : "real",
     mailbox: process.env.MAILBOX_USER || "demo@ketelmeel.local",
     configComplete: isDemoMode() || missing.length === 0,
     missing
-  });
+  };
+}
+
+function messageListLimit(value) {
+  return Math.max(10, Math.min(100, Number(value || 40)));
+}
+
+async function listFoldersFromClient(client) {
+  const boxes = await client.list();
+  return boxes.map((box) => box.path);
+}
+
+function folderCacheKey(cfg) {
+  return `${cfg.user}@${cfg.imapHost}:${cfg.imapPort}`;
+}
+
+async function cachedFoldersFromClient(client, cfg, force = false) {
+  const key = folderCacheKey(cfg);
+  const cached = folderListCache.get(key);
+  if (!force && cached && Date.now() - cached.fetchedAt < folderCacheMs) return cached.folders;
+  const folders = await listFoldersFromClient(client);
+  folderListCache.set(key, { fetchedAt: Date.now(), folders });
+  return folders;
+}
+
+function preferredFolder(folder, folders) {
+  if (!folders.length || folders.includes(folder)) return folder;
+  return folders.find((name) => /^(inbox|postvak in)$/i.test(name)) || folders[0] || folder;
+}
+
+async function fetchMessageList(client, folder, limit = 40) {
+  const lock = await client.getMailboxLock(folder);
+  try {
+    const rows = [];
+    if (!client.mailbox.exists) return [];
+    const start = Math.max(1, client.mailbox.exists - limit + 1);
+    for await (const msg of client.fetch(`${start}:*`, { envelope: true, flags: true, uid: true, bodyStructure: true })) {
+      const subject = msg.envelope?.subject || "(geen onderwerp)";
+      const from = msg.envelope?.from?.map((item) => `${item.name || item.address} <${item.address}>`).join(", ") || "";
+      const attachments = attachmentHintsFromStructure(msg.bodyStructure);
+      rows.push({
+        id: String(msg.uid),
+        folder,
+        from,
+        to: "",
+        subject,
+        preview: "Open dit bericht om de inhoud te laden.",
+        body: "",
+        date: msg.envelope?.date?.toISOString?.() || new Date().toISOString(),
+        read: msg.flags?.has("\\Seen") || false,
+        starred: msg.flags?.has("\\Flagged") || false,
+        labels: [],
+        attachments
+      });
+    }
+    return rows.reverse().slice(0, limit);
+  } finally {
+    lock.release();
+  }
+}
+
+app.get("/api/status", (_req, res) => {
+  res.json(statusPayload());
 });
 
 app.get("/api/settings", (_req, res) => {
@@ -1102,14 +1166,46 @@ app.get("/api/government-feeds", async (req, res, next) => {
   }
 });
 
-app.get("/api/folders", async (_req, res, next) => {
+app.get("/api/mailbox", async (req, res, next) => {
+  try {
+    const status = statusPayload();
+    const requestedFolder = String(req.query.folder || "Inbox");
+    const limit = messageListLimit(req.query.limit);
+
+    if (!status.configComplete) {
+      return res.json({ status, folders: fallbackFolders, folder: requestedFolder, messages: [] });
+    }
+
+    if (isDemoMode()) {
+      const folder = preferredFolder(requestedFolder, fallbackFolders);
+      return res.json({
+        status,
+        folders: fallbackFolders,
+        folder,
+        messages: demoMessages.filter((message) => message.folder === folder).slice(0, limit)
+      });
+    }
+
+    const mailbox = await withImap(async (client, cfg) => {
+      const folders = await cachedFoldersFromClient(client, cfg, req.query.refresh === "1");
+      const folder = preferredFolder(requestedFolder, folders);
+      const messages = await fetchMessageList(client, folder, limit);
+      return { folders, folder, messages };
+    });
+
+    res.json({ status, ...mailbox });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/folders", async (req, res, next) => {
   try {
     if (isDemoMode()) {
       return res.json(["Inbox", "Archive", "Sent", "Drafts", "Spam", "Trash"]);
     }
-    const folders = await withImap(async (client) => {
-      const boxes = await client.list();
-      return boxes.map((box) => box.path);
+    const folders = await withImap(async (client, cfg) => {
+      return cachedFoldersFromClient(client, cfg, req.query.refresh === "1");
     });
     res.json(folders);
   } catch (error) {
@@ -1120,38 +1216,12 @@ app.get("/api/folders", async (_req, res, next) => {
 app.get("/api/messages", async (req, res, next) => {
   try {
     const folder = String(req.query.folder || "Inbox");
+    const limit = messageListLimit(req.query.limit);
     if (isDemoMode()) {
-      return res.json(demoMessages.filter((message) => message.folder === folder));
+      return res.json(demoMessages.filter((message) => message.folder === folder).slice(0, limit));
     }
     const messages = await withImap(async (client) => {
-      const lock = await client.getMailboxLock(folder);
-      try {
-        const rows = [];
-        if (!client.mailbox.exists) return [];
-        const start = Math.max(1, client.mailbox.exists - 99);
-        for await (const msg of client.fetch(`${start}:*`, { envelope: true, flags: true, uid: true, bodyStructure: true })) {
-          const subject = msg.envelope?.subject || "(geen onderwerp)";
-          const from = msg.envelope?.from?.map((item) => `${item.name || item.address} <${item.address}>`).join(", ") || "";
-          const attachments = attachmentHintsFromStructure(msg.bodyStructure);
-          rows.push({
-            id: String(msg.uid),
-            folder,
-            from,
-            to: "",
-            subject,
-            preview: "Open dit bericht om de inhoud te laden.",
-            body: "",
-            date: msg.envelope?.date?.toISOString?.() || new Date().toISOString(),
-            read: msg.flags?.has("\\Seen") || false,
-            starred: msg.flags?.has("\\Flagged") || false,
-            labels: [],
-            attachments
-          });
-        }
-        return rows.reverse().slice(0, 100);
-      } finally {
-        lock.release();
-      }
+      return fetchMessageList(client, folder, limit);
     });
     res.json(messages);
   } catch (error) {
