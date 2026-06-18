@@ -2933,10 +2933,112 @@ body.resizing-message-list {
   font-weight: 720;
 }
 
+.settings-mini-copy {
+  margin: -2px 0 2px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .sender-add-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
+}
+
+.mail-account-quickadd {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.8fr) minmax(190px, 1.2fr) minmax(150px, 0.8fr) auto;
+  gap: 8px;
+  align-items: end;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent 62%),
+    var(--panel);
+}
+
+.mail-account-quickadd label {
+  font-size: 12px;
+}
+
+.mail-account-quickadd button,
+.mail-account-actions button,
+.mail-account-card-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 11px;
+  background: var(--panel);
+  color: var(--ink);
+  font-weight: 760;
+}
+
+.mail-account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mail-account-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+}
+
+.mail-account-card,
+.mail-account-empty {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.mail-account-card {
+  display: grid;
+  gap: 8px;
+  padding: 9px;
+}
+
+.mail-account-card.active {
+  border-color: color-mix(in srgb, var(--accent) 54%, var(--border));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, transparent), transparent 66%),
+    var(--panel);
+}
+
+.mail-account-card div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.mail-account-card span,
+.mail-account-card small {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.mail-account-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mail-account-card-actions button {
+  min-height: 30px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
+.mail-account-empty {
+  padding: 10px;
+  color: var(--ink-soft);
+  font-size: 12px;
 }
 
 .sender-add-row button,
@@ -2977,6 +3079,29 @@ body.resizing-message-list {
   height: 24px;
   min-height: 24px;
   border-radius: 999px;
+}
+
+.app-shell.dark .mail-account-quickadd,
+.app-shell.dark .mail-account-card,
+.app-shell.dark .mail-account-empty {
+  border-color: color-mix(in srgb, var(--border) 72%, var(--accent));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 64%),
+    rgba(255, 255, 255, 0.035);
+}
+
+.app-shell.dark .mail-account-card.active {
+  border-color: color-mix(in srgb, var(--accent) 52%, var(--border));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 17%, transparent), transparent 66%),
+    rgba(255, 255, 255, 0.05);
+}
+
+.app-shell.dark .mail-account-quickadd button,
+.app-shell.dark .mail-account-actions button,
+.app-shell.dark .mail-account-card-actions button {
+  border-color: color-mix(in srgb, var(--border) 76%, var(--accent));
+  background: rgba(255, 255, 255, 0.045);
 }
 
 .signature-options label,

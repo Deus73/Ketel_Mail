@@ -786,10 +786,11 @@ function loadSenderSettings() {
     const parsed = JSON.parse(localStorage.getItem("ketelmeel-sender-settings") || "{}");
     return {
       defaultFrom: parsed.defaultFrom || "",
-      identities: Array.isArray(parsed.identities) ? parsed.identities.filter(Boolean) : []
+      identities: Array.isArray(parsed.identities) ? parsed.identities.filter(Boolean) : [],
+      accounts: Array.isArray(parsed.accounts) ? parsed.accounts.filter((account) => account?.email) : []
     };
   } catch {
-    return { defaultFrom: "", identities: [] };
+    return { defaultFrom: "", identities: [], accounts: [] };
   }
 }
 
@@ -809,10 +810,42 @@ function loadFeedSettings() {
 }
 
 function normalizeSenderOptions(settings, mailbox = "") {
-  const options = [mailbox, settings.defaultFrom, ...(settings.identities || [])]
+  const accountEmails = (settings.accounts || []).map((account) => account.email);
+  const options = [mailbox, settings.defaultFrom, ...(settings.identities || []), ...accountEmails]
     .map((item) => String(item || "").trim())
     .filter(Boolean);
   return [...new Set(options)];
+}
+
+function blankMailAccount() {
+  return {
+    id: `account-${Date.now()}`,
+    name: "",
+    email: "",
+    provider: "zohoBusinessEu",
+    imapHost: providerPresets.zohoBusinessEu.imapHost,
+    imapPort: providerPresets.zohoBusinessEu.imapPort,
+    imapSecure: providerPresets.zohoBusinessEu.imapSecure,
+    smtpHost: providerPresets.zohoBusinessEu.smtpHost,
+    smtpPort: providerPresets.zohoBusinessEu.smtpPort,
+    smtpSecure: providerPresets.zohoBusinessEu.smtpSecure
+  };
+}
+
+function accountFromCurrentForm(form) {
+  const email = String(form.mailboxUser || "").trim();
+  return {
+    id: `account-${Date.now()}`,
+    name: email ? email.split("@")[0] : "",
+    email,
+    provider: "custom",
+    imapHost: form.imapHost || "",
+    imapPort: Number(form.imapPort) || 993,
+    imapSecure: form.imapSecure !== false,
+    smtpHost: form.smtpHost || "",
+    smtpPort: Number(form.smtpPort) || 465,
+    smtpSecure: form.smtpSecure !== false
+  };
 }
 
 function rgbToHex({ r, g, b }) {
@@ -3070,33 +3103,56 @@ function FeedSettingsPanel({ feedSettings, onChange }) {
   );
 }
 
-function SenderPanel({ status, senderSettings, onChange }) {
-  const [draft, setDraft] = useState("");
+function SenderPanel({ status, senderSettings, form, onChange, onUseAccount, onSaveCurrent }) {
+  const [draft, setDraft] = useState(blankMailAccount);
   const options = normalizeSenderOptions(senderSettings, status.mailbox);
   const defaultFrom = senderSettings.defaultFrom || status.mailbox || options[0] || "";
+  const accounts = senderSettings.accounts || [];
 
   function addAddress() {
-    const address = draft.trim();
+    const address = draft.email.trim();
     if (!address || !address.includes("@")) return;
+    const nextAccount = {
+      ...draft,
+      id: draft.id || `account-${Date.now()}`,
+      name: draft.name.trim() || address,
+      email: address
+    };
+    const accountsNext = [...accounts.filter((account) => account.email !== address), nextAccount];
     const identities = [...new Set([...(senderSettings.identities || []), address])];
-    onChange({ defaultFrom: senderSettings.defaultFrom || address, identities });
-    setDraft("");
+    onChange({ ...senderSettings, defaultFrom: senderSettings.defaultFrom || address, identities, accounts: accountsNext });
+    setDraft(blankMailAccount());
   }
 
   function removeAddress(address) {
     const identities = (senderSettings.identities || []).filter((item) => item !== address);
+    const accountsNext = accounts.filter((account) => account.email !== address);
     const defaultFromNext = senderSettings.defaultFrom === address ? status.mailbox || identities[0] || "" : senderSettings.defaultFrom;
-    onChange({ defaultFrom: defaultFromNext, identities });
+    onChange({ ...senderSettings, defaultFrom: defaultFromNext, identities, accounts: accountsNext });
+  }
+
+  function setDefault(address) {
+    onChange({ ...senderSettings, defaultFrom: address });
+  }
+
+  function updateDraft(field, value) {
+    setDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  function changeDraftProvider(provider) {
+    const preset = providerPresets[provider] || {};
+    setDraft((current) => ({ ...current, provider, ...preset }));
   }
 
   return (
-    <section className="sender-panel" aria-label="Afzenderadressen">
+    <section className="sender-panel" aria-label="Mailaccounts">
       <div className="settings-section-heading">
         <Mail size={18} />
-        <strong>Afzenderadressen</strong>
+        <strong>Mailaccounts</strong>
       </div>
+      <p className="settings-mini-copy">Voeg meerdere mailboxen toe, kies je standaardaccount en zet met 1 knop de juiste serverinstellingen klaar.</p>
       <label>
-        <span>Standaard afzender</span>
+        <span>Standaard account</span>
         <select value={defaultFrom} onChange={(event) => onChange({ ...senderSettings, defaultFrom: event.target.value })}>
           {options.map((address) => (
             <option key={address} value={address}>
@@ -3105,23 +3161,61 @@ function SenderPanel({ status, senderSettings, onChange }) {
           ))}
         </select>
       </label>
-      <div className="sender-add-row">
-        <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="extra@jouwdomein.nl" />
+      <div className="mail-account-quickadd">
+        <label>
+          Naam
+          <input value={draft.name} onChange={(event) => updateDraft("name", event.target.value)} placeholder="Werk, support, info..." />
+        </label>
+        <label>
+          E-mailadres
+          <input value={draft.email} onChange={(event) => updateDraft("email", event.target.value)} placeholder="info@jouwdomein.nl" />
+        </label>
+        <label>
+          Provider
+          <select value={draft.provider} onChange={(event) => changeDraftProvider(event.target.value)}>
+            <option value="zohoBusinessEu">Zoho zakelijk EU</option>
+            <option value="zohoPersonalEu">Zoho persoonlijk EU</option>
+            <option value="custom">Eigen server</option>
+          </select>
+        </label>
         <button type="button" onClick={addAddress}>
           <Plus size={16} />
-          Voeg toe
+          Account toevoegen
         </button>
+      </div>
+      <div className="mail-account-actions">
+        <button type="button" onClick={onSaveCurrent} disabled={!form.mailboxUser}>
+          <Plus size={16} />
+          Huidige servervelden bewaren
+        </button>
+      </div>
+      <div className="mail-account-list">
+        {accounts.length ? accounts.map((account) => (
+          <article className={account.email === defaultFrom ? "mail-account-card active" : "mail-account-card"} key={account.email}>
+            <div>
+              <strong>{account.name || account.email}</strong>
+              <span>{account.email}</span>
+            </div>
+            <small>{account.imapHost || "Eigen IMAP"} · {account.smtpHost || "Eigen SMTP"}</small>
+            <div className="mail-account-card-actions">
+              <button type="button" onClick={() => onUseAccount(account)}>
+                Gebruik
+              </button>
+              <button type="button" onClick={() => setDefault(account.email)}>
+                Standaard
+              </button>
+              <button type="button" onClick={() => removeAddress(account.email)} aria-label={`Verwijder ${account.email}`}>
+                <X size={14} />
+              </button>
+            </div>
+          </article>
+        )) : (
+          <div className="mail-account-empty">Nog geen extra accounts. Voeg hierboven bijvoorbeeld info@, support@ of je Zoho-account toe.</div>
+        )}
       </div>
       <div className="sender-list">
         {options.map((address) => (
-          <span key={address}>
-            {address}
-            {address !== status.mailbox ? (
-              <button type="button" onClick={() => removeAddress(address)} aria-label={`Verwijder ${address}`}>
-                <X size={14} />
-              </button>
-            ) : null}
-          </span>
+          <span key={address}>{address}</span>
         ))}
       </div>
     </section>
@@ -3243,6 +3337,39 @@ function SettingsModal({
     setMessage(presetName === "zohoBusinessEu" ? "Zakelijke Zoho EU instellingen ingevuld." : "Persoonlijke Zoho EU instellingen ingevuld.");
   }
 
+  function useMailAccount(account) {
+    setForm((current) => ({
+      ...current,
+      demoMode: false,
+      mailboxUser: account.email || current.mailboxUser,
+      imapHost: account.imapHost || current.imapHost,
+      imapPort: Number(account.imapPort) || current.imapPort || 993,
+      imapSecure: account.imapSecure !== false,
+      smtpHost: account.smtpHost || current.smtpHost,
+      smtpPort: Number(account.smtpPort) || current.smtpPort || 465,
+      smtpSecure: account.smtpSecure !== false,
+      mailFrom: current.mailFrom || account.email || ""
+    }));
+    onSenderSettingsChange({ ...senderSettings, defaultFrom: account.email || senderSettings.defaultFrom });
+    setDiagnostics(null);
+    setMessage(`${account.email} staat klaar. Vul eventueel het wachtwoord/app-wachtwoord en klik Opslaan of Test verbinding.`);
+  }
+
+  function saveCurrentAsAccount() {
+    const account = accountFromCurrentForm(form);
+    if (!account.email || !account.email.includes("@")) {
+      setMessage("Vul eerst een geldig mailbox e-mailadres in.");
+      return;
+    }
+    const accounts = [
+      ...(senderSettings.accounts || []).filter((item) => item.email !== account.email),
+      account
+    ];
+    const identities = [...new Set([...(senderSettings.identities || []), account.email])];
+    onSenderSettingsChange({ ...senderSettings, defaultFrom: senderSettings.defaultFrom || account.email, identities, accounts });
+    setMessage(`${account.email} is toegevoegd aan je mailaccounts.`);
+  }
+
   function useFreeOnlineTranslate() {
     setForm((current) => ({ ...current, translateProvider: "mymemory" }));
     setMessage("Gratis online vertaling is actief. Voor privacygevoelige mail kun je LibreTranslate/self-hosted kiezen.");
@@ -3298,7 +3425,14 @@ function SettingsModal({
             <>
               <AppearancePanel appearance={appearance} onChange={onAppearanceChange} />
               <FeedSettingsPanel feedSettings={feedSettings} onChange={onFeedSettingsChange} />
-              <SenderPanel status={status} senderSettings={senderSettings} onChange={onSenderSettingsChange} />
+              <SenderPanel
+                status={status}
+                senderSettings={senderSettings}
+                form={form}
+                onChange={onSenderSettingsChange}
+                onUseAccount={useMailAccount}
+                onSaveCurrent={saveCurrentAsAccount}
+              />
               <SignaturePanel signature={signature} onChange={onSignatureChange} />
 
               <label className="settings-toggle">
