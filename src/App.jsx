@@ -2833,6 +2833,34 @@ function AppearancePanel({ appearance, onChange }) {
         <strong>Template & layout</strong>
       </div>
 
+      <div className="appearance-quickbar" aria-label="Snelle uiterlijkinstellingen">
+        <label>
+          <span>Thema</span>
+          <select value={appearance.theme} onChange={(event) => onChange({ theme: event.target.value })}>
+            <option value="light">Licht</option>
+            <option value="dark">Donker</option>
+          </select>
+        </label>
+        <label>
+          <span>Dichtheid</span>
+          <select value={appearance.density} onChange={(event) => onChange({ density: event.target.value })}>
+            <option value="comfortable">Comfort</option>
+            <option value="compact">Compact</option>
+            <option value="dense">Zeer compact</option>
+          </select>
+        </label>
+        <label>
+          <span>Layout</span>
+          <select value={appearance.layoutMode} onChange={(event) => onChange({ layoutMode: event.target.value })}>
+            {layoutOptions.map((layout) => (
+              <option key={layout.id} value={layout.id}>
+                {layout.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
       <div className="logo-settings">
         <div className="logo-preview">
           <div className="brand-mark logo-preview-mark" style={{ "--brand-logo-size": `${appearance.logoSize}px` }}>
@@ -2880,6 +2908,11 @@ function AppearancePanel({ appearance, onChange }) {
         {logoError ? <p className="logo-error">{logoError}</p> : null}
       </div>
 
+      <div className="template-strip-heading">
+        <strong>Templates</strong>
+        <span>Compacte kleursets met volledige layout-wissel</span>
+      </div>
+
       <div className="template-grid" aria-label="Templates">
         {templatePresets.map((preset) => {
           const active = appearance.templateId === preset.id;
@@ -2904,6 +2937,11 @@ function AppearancePanel({ appearance, onChange }) {
             </button>
           );
         })}
+      </div>
+
+      <div className="template-strip-heading">
+        <strong>Layouts</strong>
+        <span>Snelle wissel voor inbox, preview en zijpanelen</span>
       </div>
 
       <div className="layout-grid" aria-label="Layouts">

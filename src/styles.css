@@ -2274,6 +2274,10 @@ body.resizing-message-list {
   box-shadow: var(--shadow);
 }
 
+.settings-modal {
+  width: min(980px, 100%);
+}
+
 .compose-modal {
   display: grid;
   gap: 12px;
@@ -2343,6 +2347,7 @@ body.resizing-message-list {
 .app-shell.dark .compose-modal select,
 .app-shell.dark .settings-grid input,
 .app-shell.dark .settings-grid select,
+.app-shell.dark .appearance-quickbar select,
 .app-shell.dark .feed-settings-panel input,
 .app-shell.dark .feed-settings-panel select,
 .app-shell.dark .feed-settings-panel textarea,
@@ -2413,7 +2418,7 @@ body.resizing-message-list {
 }
 
 .settings-modal > .modal-header {
-  padding: 16px 18px 12px;
+  padding: 12px 14px 10px;
   border-bottom: 1px solid var(--border);
   background: var(--panel);
 }
@@ -2421,7 +2426,7 @@ body.resizing-message-list {
 .settings-scroll {
   min-height: 0;
   overflow: auto;
-  padding: 0 18px 18px;
+  padding: 0 14px 14px;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
@@ -2455,9 +2460,9 @@ body.resizing-message-list {
 
 .settings-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 10px;
 }
 
 .appearance-panel,
@@ -2465,12 +2470,37 @@ body.resizing-message-list {
 .sender-panel,
 .signature-panel {
   display: grid;
-  gap: 12px;
-  margin-top: 16px;
-  padding: 12px;
+  gap: 9px;
+  margin-top: 10px;
+  padding: 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--panel-soft);
+}
+
+.appearance-quickbar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.appearance-quickbar label {
+  display: grid;
+  gap: 5px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.appearance-quickbar select {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 9px;
+  background: var(--panel);
+  color: var(--ink);
+  font-weight: 720;
 }
 
 .signature-options,
@@ -2595,10 +2625,28 @@ body.resizing-message-list {
   color: var(--ink);
 }
 
+.settings-section-heading strong {
+  font-size: 14px;
+}
+
+.template-strip-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 2px;
+  color: var(--ink);
+}
+
+.template-strip-heading span {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
 .template-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 6px;
 }
 
 .template-card,
@@ -2612,9 +2660,10 @@ body.resizing-message-list {
 .template-card {
   display: grid;
   position: relative;
-  gap: 7px;
-  min-height: 92px;
-  padding: 10px;
+  grid-template-rows: auto 1fr auto;
+  gap: 5px;
+  min-height: 66px;
+  padding: 8px;
   text-align: left;
   overflow: hidden;
 }
@@ -2629,32 +2678,46 @@ body.resizing-message-list {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
+}
+
+.template-card-top strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .template-card span:not(.template-card-top):not(.template-swatches) {
   color: var(--ink-soft);
-  font-size: 13px;
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
 }
 
 .template-swatches {
   display: flex;
-  gap: 5px;
+  gap: 3px;
 }
 
 .template-swatches i {
-  width: 24px;
-  height: 8px;
-  border-radius: 999px;
+  flex: 1 1 0;
+  min-width: 14px;
+  height: 7px;
+  border-radius: 4px;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.34);
 }
 
 .template-card-logo {
   position: absolute;
-  left: 8px;
-  bottom: 8px;
-  width: 28px;
-  height: 28px;
+  right: 7px;
+  bottom: 7px;
+  width: 22px;
+  height: 22px;
   object-fit: contain;
   padding: 2px;
   border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
@@ -2664,20 +2727,22 @@ body.resizing-message-list {
 }
 
 .template-card.has-corner-logo {
-  min-height: 108px;
-  padding-bottom: 42px;
+  min-height: 72px;
+  padding-right: 34px;
 }
 
 .layout-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(116px, 1fr));
+  gap: 6px;
 }
 
 .logo-settings {
   display: grid;
-  gap: 10px;
-  padding: 12px;
+  grid-template-columns: minmax(190px, 1.1fr) minmax(180px, 1fr) minmax(220px, 1.25fr);
+  align-items: center;
+  gap: 8px;
+  padding: 9px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--panel);
@@ -2686,7 +2751,7 @@ body.resizing-message-list {
 .logo-preview {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 9px;
 }
 
 .logo-preview strong,
@@ -2706,7 +2771,7 @@ body.resizing-message-list {
 .logo-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .logo-upload-button,
@@ -2714,11 +2779,11 @@ body.resizing-message-list {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 38px;
+  gap: 6px;
+  min-height: 34px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 0 12px;
+  padding: 0 10px;
   background: var(--panel-soft);
   color: var(--ink);
   font-weight: 740;
@@ -2730,10 +2795,11 @@ body.resizing-message-list {
 
 .logo-size-control {
   display: grid;
-  grid-template-columns: auto minmax(120px, 1fr) 54px;
+  grid-template-columns: auto minmax(92px, 1fr) 44px;
   align-items: center;
-  gap: 10px;
+  gap: 7px;
   color: var(--ink);
+  font-size: 12px;
   font-weight: 720;
 }
 
@@ -2757,9 +2823,10 @@ body.resizing-message-list {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 7px;
-  min-height: 42px;
-  padding: 0 10px;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 8px;
+  font-size: 12px;
   font-weight: 740;
   text-align: left;
 }
@@ -2768,18 +2835,19 @@ body.resizing-message-list {
 .settings-toggle,
 .settings-checks label {
   display: grid;
-  gap: 7px;
+  gap: 5px;
   color: var(--ink);
+  font-size: 12px;
   font-weight: 720;
 }
 
 .settings-grid input,
 .settings-grid select {
   width: 100%;
-  min-height: 42px;
+  min-height: 34px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 7px 9px;
   outline: 0;
   background: var(--panel-soft);
   color: var(--ink);
@@ -2788,7 +2856,7 @@ body.resizing-message-list {
 
 .settings-grid .secondary-button {
   width: 100%;
-  min-height: 42px;
+  min-height: 34px;
   justify-content: center;
 }
 
@@ -2804,8 +2872,8 @@ body.resizing-message-list {
 }
 
 .settings-toggle {
-  margin-top: 16px;
-  padding: 12px;
+  margin-top: 10px;
+  padding: 9px 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--panel-soft);
@@ -2865,12 +2933,12 @@ body.resizing-message-list {
 .settings-checks {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 12px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .settings-checks label {
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--panel-soft);
@@ -3551,8 +3619,10 @@ body.resizing-message-list {
   .compose-grid,
   .settings-modal dl div,
   .settings-grid,
+  .appearance-quickbar,
   .template-grid,
   .layout-grid,
+  .logo-settings,
   .feed-settings-grid,
   .sender-add-row,
   .signature-options,
