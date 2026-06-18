@@ -401,13 +401,13 @@ const demoMessages = [
 
 function envConfig() {
   return {
-    demoMode: process.env.DEMO_MODE !== "false",
+    demoMode: process.env.DEMO_MODE === "true",
     user: process.env.MAILBOX_USER,
     pass: process.env.MAILBOX_PASSWORD,
-    imapHost: process.env.IMAP_HOST,
+    imapHost: process.env.IMAP_HOST || "imappro.zoho.eu",
     imapPort: Number(process.env.IMAP_PORT || 993),
     imapSecure: process.env.IMAP_SECURE !== "false",
-    smtpHost: process.env.SMTP_HOST,
+    smtpHost: process.env.SMTP_HOST || "smtppro.zoho.eu",
     smtpPort: Number(process.env.SMTP_PORT || 465),
     smtpSecure: process.env.SMTP_SECURE !== "false",
     from: process.env.MAIL_FROM || process.env.MAILBOX_USER,
@@ -418,7 +418,7 @@ function envConfig() {
 }
 
 function isDemoMode() {
-  return process.env.DEMO_MODE !== "false";
+  return process.env.DEMO_MODE === "true";
 }
 
 async function loadEnvFile() {

@@ -20,7 +20,6 @@ import {
   Eye,
   ExternalLink,
   FileText,
-  Image as ImageIcon,
   Inbox,
   Italic,
   Layers3,
@@ -57,6 +56,7 @@ import {
 import "./styles.css";
 
 const fallbackFolders = ["Inbox", "Archive", "Sent", "Drafts", "Spam", "Trash"];
+const defaultLogoUrl = "https://i.imgur.com/SCRxodL.png";
 
 const folderIcons = {
   Inbox,
@@ -816,17 +816,20 @@ function normalizeAddressBookContacts(contacts = []) {
 }
 
 function loadFeedSettings() {
+  const defaults = { settingsVersion: 2, scrollSeconds: 1200, refreshMode: "fast", limit: 18, latestFirst: true, customSources: "" };
   try {
     const parsed = JSON.parse(localStorage.getItem("ketelmeel-feed-settings") || "{}");
+    const storedVersion = Number(parsed.settingsVersion || 0);
     return {
-      scrollSeconds: Math.max(600, Math.min(1800, Number(parsed.scrollSeconds || 1200))),
-      refreshMode: parsed.refreshMode === "fast" ? "fast" : "normal",
-      limit: Math.max(1, Math.min(60, Number(parsed.limit || 18))),
+      settingsVersion: defaults.settingsVersion,
+      scrollSeconds: Math.max(600, Math.min(1800, Number(parsed.scrollSeconds || defaults.scrollSeconds))),
+      refreshMode: storedVersion >= defaults.settingsVersion && parsed.refreshMode === "normal" ? "normal" : defaults.refreshMode,
+      limit: Math.max(1, Math.min(60, Number(parsed.limit || defaults.limit))),
       latestFirst: parsed.latestFirst !== false,
-      customSources: String(parsed.customSources || "")
+      customSources: String(parsed.customSources || defaults.customSources)
     };
   } catch {
-    return { scrollSeconds: 1200, refreshMode: "normal", limit: 18, latestFirst: true, customSources: "" };
+    return defaults;
   }
 }
 
@@ -1091,13 +1094,34 @@ function App() {
   const [messageListWidth, setMessageListWidth] = useState(() => clampMessageListWidth(localStorage.getItem("ketelmeel-message-list-width") || 390));
   const [messageListHeight, setMessageListHeight] = useState(() => clampMessageListHeight(localStorage.getItem("ketelmeel-message-list-height") || 360));
   const [overviewExpanded, setOverviewExpanded] = useState(false);
-  const [theme, setTheme] = useState(() => localStorage.getItem("librepost-theme") || "light");
-  const [templateId, setTemplateId] = useState(() => localStorage.getItem("librepost-template") || templatePresets[0].id);
-  const [layoutMode, setLayoutMode] = useState(() => localStorage.getItem("librepost-layout") || templatePresets[0].layoutMode);
-  const [density, setDensity] = useState(() => localStorage.getItem("librepost-density") || templatePresets[0].density);
+  const defaultTemplate = getTemplatePreset("heksenketel");
+  const [theme, setTheme] = useState(() => {
+    const appearanceVersion = localStorage.getItem("ketelmeel-appearance-version");
+    if (appearanceVersion !== "2") return defaultTemplate.theme;
+    return localStorage.getItem("librepost-theme") || defaultTemplate.theme;
+  });
+  const [templateId, setTemplateId] = useState(() => {
+    const appearanceVersion = localStorage.getItem("ketelmeel-appearance-version");
+    if (appearanceVersion !== "2") return defaultTemplate.id;
+    return localStorage.getItem("librepost-template") || defaultTemplate.id;
+  });
+  const [layoutMode, setLayoutMode] = useState(() => {
+    const appearanceVersion = localStorage.getItem("ketelmeel-appearance-version");
+    if (appearanceVersion !== "2") return defaultTemplate.layoutMode;
+    return localStorage.getItem("librepost-layout") || defaultTemplate.layoutMode;
+  });
+  const [density, setDensity] = useState(() => {
+    const appearanceVersion = localStorage.getItem("ketelmeel-appearance-version");
+    if (appearanceVersion !== "2") return defaultTemplate.density;
+    return localStorage.getItem("librepost-density") || defaultTemplate.density;
+  });
   const [logoDataUrl, setLogoDataUrl] = useState(() => localStorage.getItem("ketelpost-logo") || "");
   const [logoSize, setLogoSize] = useState(() => Number(localStorage.getItem("ketelpost-logo-size") || 42));
-  const [logoBackdrop, setLogoBackdrop] = useState(() => localStorage.getItem("ketelmeel-logo-backdrop") || "white");
+  const [logoBackdrop, setLogoBackdrop] = useState(() => {
+    const backdropVersion = localStorage.getItem("ketelmeel-logo-backdrop-version");
+    if (backdropVersion !== "2") return "transparent";
+    return localStorage.getItem("ketelmeel-logo-backdrop") || "transparent";
+  });
   const [logoThemeVars, setLogoThemeVars] = useState(loadLogoThemeVars);
   const [senderSettings, setSenderSettings] = useState(loadSenderSettings);
   const [addressBook, setAddressBook] = useState([]);
@@ -1293,6 +1317,7 @@ function App() {
 
   useEffect(() => {
     localStorage.setItem("librepost-template", templateId);
+    localStorage.setItem("ketelmeel-appearance-version", "2");
   }, [templateId]);
 
   useEffect(() => {
@@ -1326,6 +1351,7 @@ function App() {
 
   useEffect(() => {
     localStorage.setItem("ketelmeel-logo-backdrop", logoBackdrop);
+    localStorage.setItem("ketelmeel-logo-backdrop-version", "2");
   }, [logoBackdrop]);
 
   useEffect(() => {
@@ -1799,6 +1825,7 @@ function App() {
   const selectedTemplate = getTemplatePreset(templateId);
   const senderOptions = useMemo(() => normalizeSenderOptions(senderSettings, status.mailbox), [senderSettings, status.mailbox]);
   const overviewCompact = Boolean(selectedId && !overviewExpanded);
+  const activeLogoUrl = logoDataUrl || defaultLogoUrl;
 
   return (
     <main
@@ -1814,8 +1841,8 @@ function App() {
           title="Sleep om de linker kolom te verkleinen of vergroten"
         />
         <div className="brand-row">
-          <div className={`brand-mark ${logoDataUrl ? "has-custom-logo" : ""}`}>
-            {logoDataUrl ? <img src={logoDataUrl} alt="Ketel Mail logo" /> : <Mail size={22} />}
+          <div className={`brand-mark ${activeLogoUrl ? "has-custom-logo" : ""}`}>
+            <img src={activeLogoUrl} alt="Ketel Mail logo" />
           </div>
           <div>
             <strong>Ketel Mail</strong>
@@ -3090,6 +3117,7 @@ function ComposeModal({ signature, senderOptions = [], addressBook = [], default
 
 function AppearancePanel({ appearance, onChange }) {
   const [logoError, setLogoError] = useState("");
+  const previewLogoUrl = appearance.logoDataUrl || defaultLogoUrl;
 
   function applyTemplate(preset) {
     onChange({
@@ -3166,11 +3194,11 @@ function AppearancePanel({ appearance, onChange }) {
       <div className="logo-settings">
         <div className="logo-preview">
           <div className="brand-mark logo-preview-mark" style={{ "--brand-logo-size": `${appearance.logoSize}px` }}>
-            {appearance.logoDataUrl ? <img src={appearance.logoDataUrl} alt="Ketel Mail logo voorbeeld" /> : <ImageIcon size={22} />}
+            <img src={previewLogoUrl} alt="Ketel Mail logo voorbeeld" />
           </div>
           <div>
             <strong>Eigen logo</strong>
-            <span>Wordt gebruikt in elke template.</span>
+            <span>{appearance.logoDataUrl ? "Wordt gebruikt in elke template." : "Standaard Ketel Mail logo."}</span>
           </div>
         </div>
         <div className="logo-actions">
@@ -3502,13 +3530,13 @@ function SettingsModal({
   onSaved
 }) {
   const [form, setForm] = useState({
-    demoMode: status.mode === "demo",
+    demoMode: false,
     mailboxUser: "",
     mailboxPassword: "",
-    imapHost: "",
+    imapHost: providerPresets.zohoBusinessEu.imapHost,
     imapPort: 993,
     imapSecure: true,
-    smtpHost: "",
+    smtpHost: providerPresets.zohoBusinessEu.smtpHost,
     smtpPort: 465,
     smtpSecure: true,
     mailFrom: "",
@@ -3526,13 +3554,13 @@ function SettingsModal({
     api("/api/settings")
       .then((settings) => {
         setForm({
-          demoMode: settings.demoMode,
+          demoMode: settings.demoMode === true,
           mailboxUser: initialMailboxUser || settings.mailboxUser || "",
           mailboxPassword: "",
-          imapHost: settings.imapHost || "",
+          imapHost: settings.imapHost || providerPresets.zohoBusinessEu.imapHost,
           imapPort: settings.imapPort || 993,
           imapSecure: settings.imapSecure !== false,
-          smtpHost: settings.smtpHost || "",
+          smtpHost: settings.smtpHost || providerPresets.zohoBusinessEu.smtpHost,
           smtpPort: settings.smtpPort || 465,
           smtpSecure: settings.smtpSecure !== false,
           mailFrom: settings.mailFrom || "",
