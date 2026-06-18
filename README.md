@@ -2,6 +2,12 @@
 
 Ketel Mail is een gratis, zelf-hostbare webmail-app voor je eigen server. De app start standaard met een demo-inbox, zodat je direct kunt kijken hoe hij werkt. Zet `DEMO_MODE=false` en vul IMAP/SMTP-gegevens in om hem met een echte mailbox te gebruiken.
 
+## Screenshots
+
+![Ketel Mail inbox](docs/screenshots/ketel-mail-inbox.png)
+
+![Ketel Mail templates en instellingen](docs/screenshots/ketel-mail-settings-templates.png)
+
 ## Lokaal starten
 
 ```bash
