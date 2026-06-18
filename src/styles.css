@@ -456,7 +456,8 @@ dt,
   box-shadow: inset 3px 0 0 var(--accent);
 }
 
-.folder-context-menu {
+.folder-context-menu,
+.message-context-menu {
   position: fixed;
   z-index: 40;
   display: grid;
@@ -469,6 +470,10 @@ dt,
   box-shadow: var(--shadow);
   color: var(--ink);
   backdrop-filter: blur(18px);
+}
+
+.message-context-menu {
+  width: 280px;
 }
 
 .folder-context-heading {
@@ -491,9 +496,10 @@ dt,
   font-size: 12px;
 }
 
-.folder-context-menu button {
+.folder-context-menu button,
+.message-context-menu button {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
+  grid-template-columns: 18px minmax(0, 1fr) auto;
   align-items: center;
   gap: 9px;
   min-height: 36px;
@@ -505,19 +511,33 @@ dt,
   text-align: left;
 }
 
-.folder-context-menu button:hover {
+.folder-context-menu button:hover,
+.message-context-menu button:hover {
   border-color: var(--border);
   background: var(--panel-soft);
 }
 
-.folder-context-menu button.danger {
+.folder-context-menu button.danger,
+.message-context-menu button.danger {
   color: var(--rose);
   font-weight: 820;
 }
 
-.folder-context-menu button:disabled {
+.folder-context-menu button:disabled,
+.message-context-menu button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.message-context-menu kbd {
+  min-width: 28px;
+  padding: 2px 5px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--panel-soft);
+  color: var(--ink-soft);
+  font-size: 10px;
+  text-align: center;
 }
 
 .folder-context-divider {
@@ -535,6 +555,7 @@ dt,
 .app-shell.dark .folder-list .smart-folder-button.active,
 .app-shell.dark .smart-lanes button:hover,
 .app-shell.dark .folder-context-menu button:hover,
+.app-shell.dark .message-context-menu button:hover,
 .app-shell.dark .mail-tabs button:hover,
 .app-shell.dark .reader-toolbar button:hover,
 .app-shell.dark .assistant-panel button:hover,
@@ -574,12 +595,14 @@ dt,
     0 10px 24px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
-.app-shell.dark .folder-context-menu {
+.app-shell.dark .folder-context-menu,
+.app-shell.dark .message-context-menu {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.022)), var(--panel);
   border-color: rgba(169, 196, 181, 0.22);
 }
 
-.app-shell.dark .folder-context-menu button.danger {
+.app-shell.dark .folder-context-menu button.danger,
+.app-shell.dark .message-context-menu button.danger {
   color: #ff9bae;
 }
 
@@ -601,6 +624,45 @@ dt,
 .app-shell.dark .mail-tabs button em {
   background: rgba(255, 255, 255, 0.10);
   color: var(--ink);
+}
+
+.folder-counts {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  min-width: 48px;
+  margin-left: auto;
+}
+
+.folder-counts .folder-total {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #8a948f;
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.folder-counts .folder-unread {
+  min-width: 22px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #050607;
+  font-size: 12px;
+  font-weight: 950;
+  text-align: center;
+}
+
+.app-shell.dark .folder-counts .folder-total {
+  color: #8d9d94;
+}
+
+.app-shell.dark .folder-counts .folder-unread {
+  background: #f8fafc;
+  color: #050607;
 }
 
 .app-shell.dark .mail-tabs button {

@@ -1290,6 +1290,35 @@ function preferredFolder(folder, folders) {
   return folders.find((name) => /^(inbox|postvak in)$/i.test(name)) || folders[0] || folder;
 }
 
+function demoFolderStats(folders = fallbackFolders) {
+  return Object.fromEntries(
+    folders.map((folder) => {
+      const messages = demoMessages.filter((message) => message.folder === folder);
+      return [
+        folder,
+        {
+          total: messages.length,
+          unread: messages.filter((message) => !message.read).length
+        }
+      ];
+    })
+  );
+}
+
+async function folderStatsFromClient(client, folders = []) {
+  const entries = await Promise.all(
+    folders.map(async (folder) => {
+      try {
+        const status = await client.status(folder, { messages: true, unseen: true });
+        return [folder, { total: Number(status.messages || 0), unread: Number(status.unseen || 0) }];
+      } catch {
+        return [folder, { total: 0, unread: 0 }];
+      }
+    })
+  );
+  return Object.fromEntries(entries);
+}
+
 async function fetchMessageList(client, folder, limit = 40) {
   const lock = await client.getMailboxLock(folder);
   try {
@@ -1383,7 +1412,7 @@ app.get("/api/mailbox", async (req, res, next) => {
     const limit = messageListLimit(req.query.limit);
 
     if (!status.configComplete) {
-      return res.json({ status, folders: fallbackFolders, folder: requestedFolder, messages: [] });
+      return res.json({ status, folders: fallbackFolders, folderStats: demoFolderStats(fallbackFolders), folder: requestedFolder, messages: [] });
     }
 
     if (isDemoMode()) {
@@ -1391,6 +1420,7 @@ app.get("/api/mailbox", async (req, res, next) => {
       return res.json({
         status,
         folders: fallbackFolders,
+        folderStats: demoFolderStats(fallbackFolders),
         folder,
         messages: demoMessages.filter((message) => message.folder === folder).slice(0, limit)
       });
@@ -1399,8 +1429,11 @@ app.get("/api/mailbox", async (req, res, next) => {
     const mailbox = await withImap(async (client, cfg) => {
       const folders = await cachedFoldersFromClient(client, cfg, req.query.refresh === "1");
       const folder = preferredFolder(requestedFolder, folders);
-      const messages = await cachedMessageListFromClient(client, cfg, folder, limit, req.query.refresh === "1");
-      return { folders, folder, messages };
+      const [messages, folderStats] = await Promise.all([
+        cachedMessageListFromClient(client, cfg, folder, limit, req.query.refresh === "1"),
+        folderStatsFromClient(client, folders)
+      ]);
+      return { folders, folderStats, folder, messages };
     });
 
     res.json({ status, ...mailbox });

@@ -1077,6 +1077,7 @@ function clampMessageListHeight(value) {
 function App() {
   const [status, setStatus] = useState({ mode: "demo", mailbox: "demo@ketelmeel.local" });
   const [folders, setFolders] = useState(fallbackFolders);
+  const [folderStats, setFolderStats] = useState({});
   const [activeFolder, setActiveFolder] = useState("Inbox");
   const [activeSmartFolder, setActiveSmartFolder] = useState("");
   const [messages, setMessages] = useState([]);
@@ -1136,6 +1137,7 @@ function App() {
   const [translatingId, setTranslatingId] = useState("");
   const [loading, setLoading] = useState(true);
   const [folderMenu, setFolderMenu] = useState(null);
+  const [messageMenu, setMessageMenu] = useState(null);
   const [spamCleaning, setSpamCleaning] = useState(false);
   const [connectionError, setConnectionError] = useState("");
   const [toast, setToast] = useState("");
@@ -1171,6 +1173,7 @@ function App() {
       setStatus(nextStatus);
       if (!nextStatus.configComplete) {
         setFolders(fallbackFolders);
+        setFolderStats(mailbox.folderStats || {});
         setMessages([]);
         setSelectedId(null);
         setSettingsOpen(true);
@@ -1183,6 +1186,7 @@ function App() {
       if (targetFolder !== activeFolder) setActiveFolder(targetFolder);
       const nextMessages = mailbox.messages || [];
       setFolders(usableFolders);
+      setFolderStats(mailbox.folderStats || {});
       setMessages(nextMessages);
       setSelectedId(nextMessages[0]?.id || null);
     } catch (error) {
@@ -1281,24 +1285,109 @@ function App() {
 
   useEffect(() => {
     function onKeyDown(event) {
+      const target = event.target;
+      const isTyping =
+        target?.closest?.("input, textarea, select, [contenteditable='true']") ||
+        target?.isContentEditable;
+
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         setCommandOpen(true);
+        return;
       }
+
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "n") {
+        event.preventDefault();
+        openCompose();
+        return;
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "r") {
+        event.preventDefault();
+        loadMailbox(activeFolder, { refresh: true });
+        return;
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        document.querySelector(".search-box input")?.focus();
+        return;
+      }
+
+      if (isTyping) return;
+
       if (event.key === "Escape") {
         setCommandOpen(false);
         setSettingsOpen(false);
         setFolderMenu(null);
+        setMessageMenu(null);
+        return;
+      }
+
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        if (!filteredMessages.length) return;
+        event.preventDefault();
+        const currentIndex = Math.max(0, filteredMessages.findIndex((message) => message.id === selectedId));
+        const nextIndex = event.key === "ArrowDown" ? Math.min(filteredMessages.length - 1, currentIndex + 1) : Math.max(0, currentIndex - 1);
+        setSelectedId(filteredMessages[nextIndex]?.id || null);
+        return;
+      }
+
+      if (event.key === "Enter") {
+        if (selectedId) setOverviewExpanded(false);
+        return;
+      }
+
+      if (event.key.toLowerCase() === "n") {
+        event.preventDefault();
+        openCompose();
+        return;
+      }
+
+      if (event.key.toLowerCase() === "r") {
+        event.preventDefault();
+        openReply(selectedEnriched);
+        return;
+      }
+
+      if (event.key.toLowerCase() === "a") {
+        event.preventDefault();
+        moveSelectedToSpecialFolder("archive");
+        return;
+      }
+
+      if (event.key === "Delete" || event.key === "Backspace") {
+        event.preventDefault();
+        moveSelectedToSpecialFolder("trash");
+        return;
+      }
+
+      if (event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        toggleMessageMark(selectedEnriched, "starred");
+        return;
+      }
+
+      if (event.key === "!" || event.key.toLowerCase() === "u") {
+        event.preventDefault();
+        toggleMessageMark(selectedEnriched, "urgent");
+        return;
+      }
+
+      if (event.key.toLowerCase() === "t") {
+        event.preventDefault();
+        translateMessage(selectedEnriched);
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  });
 
   useEffect(() => {
     function closeFolderMenu(event) {
-      if (event.button !== 0 || event.target?.closest?.(".folder-context-menu")) return;
+      if (event.button !== 0 || event.target?.closest?.(".folder-context-menu, .message-context-menu")) return;
       setFolderMenu(null);
+      setMessageMenu(null);
     }
 
     window.addEventListener("pointerdown", closeFolderMenu);
@@ -1680,6 +1769,16 @@ function App() {
   async function moveSelectedToSpecialFolder(kind) {
     const label = kind === "trash" ? "Verwijderen" : "Archiveren";
     if (!ensureActionReady(label)) return;
+    await moveMessageToSpecialFolder(selectedEnriched, kind);
+  }
+
+  async function moveMessageToSpecialFolder(message, kind) {
+    if (!message) return;
+    if (!status.configComplete) {
+      setSettingsOpen(true);
+      setToast("Vul bij Serverinstellingen je mailbox, wachtwoord/app-wachtwoord, IMAP server en SMTP server in. Daarna werken de mailknoppen automatisch.");
+      return;
+    }
     const targetFolder = kind === "trash" ? findTrashFolderName(folders) : findArchiveFolderName(folders);
     if (!targetFolder) {
       setToast(
@@ -1689,7 +1788,7 @@ function App() {
       );
       return;
     }
-    await moveMessageToFolder(selectedEnriched, targetFolder);
+    await moveMessageToFolder(message, targetFolder);
   }
 
   function fakeAction(label) {
@@ -1705,6 +1804,38 @@ function App() {
       x: Math.max(8, Math.min(event.clientX, window.innerWidth - width - 8)),
       y: Math.max(8, Math.min(event.clientY, window.innerHeight - height - 8))
     });
+    setMessageMenu(null);
+  }
+
+  function openMessageMenu(event, message) {
+    event.preventDefault();
+    setSelectedId(message.id);
+    const width = 280;
+    const height = 336;
+    setMessageMenu({
+      message,
+      x: Math.max(8, Math.min(event.clientX, window.innerWidth - width - 8)),
+      y: Math.max(8, Math.min(event.clientY, window.innerHeight - height - 8))
+    });
+    setFolderMenu(null);
+  }
+
+  function closeMessageMenu() {
+    setMessageMenu(null);
+  }
+
+  function runMessageMenuAction(action) {
+    const message = messageMenu?.message ? applyMessageMarks(messageMenu.message, messageMarks) : selectedEnriched;
+    if (!message) return;
+    setSelectedId(message.id);
+    if (action === "reply") openReply(message);
+    if (action === "archive") moveMessageToSpecialFolder(message, "archive");
+    if (action === "trash") moveMessageToSpecialFolder(message, "trash");
+    if (action === "star") toggleMessageMark(message, "starred");
+    if (action === "urgent") toggleMessageMark(message, "urgent");
+    if (action === "translate") translateMessage(message);
+    if (action === "refresh") loadMailbox(activeFolder, { refresh: true });
+    closeMessageMenu();
   }
 
   function applyFolderFilter(folder, mode = "Alles") {
@@ -1874,6 +2005,9 @@ function App() {
             const isDropTarget = dragOverFolder === folder && draggedMessage?.folder !== folder;
             const isDropReady = Boolean(draggedMessage && draggedMessage.folder !== folder);
             const isDropDisabled = Boolean(draggedMessage && draggedMessage.folder === folder);
+            const counts = folderStats[folder] || {};
+            const folderTotal = Number(counts.total || 0);
+            const folderUnread = Number(counts.unread || 0);
             const folderTitle = draggedMessage
               ? isDropDisabled
                 ? `Bericht staat al in ${folder}`
@@ -1898,7 +2032,10 @@ function App() {
               >
                 <Icon size={18} />
                 <span>{folder}</span>
-                {folder === "Inbox" && stats.unread > 0 ? <em>{stats.unread}</em> : null}
+                <span className="folder-counts" aria-label={`${folderTotal} berichten, ${folderUnread} ongelezen`}>
+                  <em className="folder-total">{folderTotal}</em>
+                  {folderUnread > 0 ? <strong className="folder-unread">{folderUnread}</strong> : null}
+                </span>
               </button>
             );
           })}
@@ -1966,6 +2103,58 @@ function App() {
             <span className="folder-context-note">
               {contextSpamFolder ? `Doelmap: ${contextSpamFolder}` : "Geen spammap gevonden"}
             </span>
+          </div>
+        ) : null}
+
+        {messageMenu ? (
+          <div
+            className="message-context-menu"
+            role="menu"
+            aria-label={`Mailacties voor ${messageMenu.message.subject}`}
+            style={{ left: messageMenu.x, top: messageMenu.y }}
+            onClick={(event) => event.stopPropagation()}
+            onContextMenu={(event) => event.preventDefault()}
+          >
+            <div className="folder-context-heading">
+              <strong>{messageMenu.message.subject || "(geen onderwerp)"}</strong>
+              <span>RMK mailacties</span>
+            </div>
+            <button type="button" role="menuitem" onClick={() => runMessageMenuAction("reply")}>
+              <PenLine size={16} />
+              Beantwoorden
+              <kbd>R</kbd>
+            </button>
+            <button type="button" role="menuitem" onClick={() => runMessageMenuAction("archive")}>
+              <Archive size={16} />
+              Archiveer
+              <kbd>A</kbd>
+            </button>
+            <button type="button" role="menuitem" className="danger" onClick={() => runMessageMenuAction("trash")}>
+              <Trash2 size={16} />
+              Prullenbak
+              <kbd>Del</kbd>
+            </button>
+            <div className="folder-context-divider" />
+            <button type="button" role="menuitem" onClick={() => runMessageMenuAction("star")}>
+              <Star size={16} fill={messageMenu.message.starred ? "currentColor" : "none"} />
+              Gele ster
+              <kbd>S</kbd>
+            </button>
+            <button type="button" role="menuitem" onClick={() => runMessageMenuAction("urgent")}>
+              <CircleAlert size={16} fill={messageMenu.message.urgent ? "currentColor" : "none"} />
+              Rood uitroepteken
+              <kbd>!</kbd>
+            </button>
+            <button type="button" role="menuitem" onClick={() => runMessageMenuAction("translate")}>
+              <Languages size={16} />
+              Vertalen
+              <kbd>T</kbd>
+            </button>
+            <button type="button" role="menuitem" onClick={() => runMessageMenuAction("refresh")}>
+              <RefreshCw size={16} />
+              Vernieuwen
+              <kbd>Ctrl R</kbd>
+            </button>
           </div>
         ) : null}
 
@@ -2112,6 +2301,7 @@ function App() {
                     data-message-id={message.id}
                     className={`message-row ${message.id === selectedId ? "selected" : ""} ${message.read ? "read" : "unread"} ${isDragging ? "dragging" : ""} ${isMoving ? "moving" : ""}`}
                     onClick={() => setSelectedId(message.id)}
+                    onContextMenu={(event) => openMessageMenu(event, message)}
                     onDragStart={(event) => handleMessageDragStart(event, message)}
                     onDragEnd={handleMessageDragEnd}
                   >
