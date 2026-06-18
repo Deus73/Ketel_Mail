@@ -1379,6 +1379,264 @@ dt,
   box-shadow: 4px 5px 0 rgba(255, 92, 154, 0.11);
 }
 
+.app-shell[class*="template-"] .topbar,
+.app-shell[class*="template-"] .sidebar,
+.app-shell[class*="template-"] .message-list,
+.app-shell[class*="template-"] .reader,
+.app-shell[class*="template-"] .right-rail section,
+.app-shell[class*="template-"] .overview-strip {
+  border-color: color-mix(in srgb, var(--border) 78%, var(--accent));
+}
+
+.app-shell[class*="template-"] .topbar {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 46%),
+    var(--panel);
+}
+
+.app-shell[class*="template-"] .message-row {
+  border-left: 4px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.app-shell[class*="template-"] .message-row:hover {
+  border-left-color: color-mix(in srgb, var(--accent) 72%, var(--sky));
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 48%),
+    var(--panel);
+}
+
+.app-shell[class*="template-"] .message-row.selected {
+  border-left-color: var(--accent);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 13%, transparent), transparent 52%),
+    var(--panel);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.app-shell[class*="template-"] .mail-tabs button.active,
+.app-shell[class*="template-"] .folder-list button.active,
+.app-shell[class*="template-"] .reader-toolbar button:hover,
+.app-shell[class*="template-"] .right-rail button:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+}
+
+.app-shell[class*="template-"] .metric,
+.app-shell[class*="template-"] .assistant-panel,
+.app-shell[class*="template-"] .translation-panel,
+.app-shell[class*="template-"] .attachments {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent 60%),
+    var(--panel-soft);
+}
+
+.app-shell.dark[class*="template-"] {
+  background:
+    radial-gradient(circle at 16% 0%, color-mix(in srgb, var(--accent) 12%, transparent) 0 260px, transparent 261px),
+    radial-gradient(circle at 94% 12%, color-mix(in srgb, var(--sky) 10%, transparent) 0 220px, transparent 221px),
+    var(--bg);
+}
+
+.app-shell.dark[class*="template-"] .topbar,
+.app-shell.dark[class*="template-"] .sidebar,
+.app-shell.dark[class*="template-"] .message-list,
+.app-shell.dark[class*="template-"] .reader,
+.app-shell.dark[class*="template-"] .right-rail section,
+.app-shell.dark[class*="template-"] .overview-strip,
+.app-shell.dark[class*="template-"] .settings-modal,
+.app-shell.dark[class*="template-"] .compose-modal,
+.app-shell.dark[class*="template-"] .command-modal {
+  border-color: color-mix(in srgb, var(--border) 72%, var(--accent));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012)),
+    color-mix(in srgb, var(--panel) 94%, #000000);
+}
+
+.app-shell.dark[class*="template-"] .message-row {
+  border-left-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 5%, transparent), transparent 50%),
+    color-mix(in srgb, var(--panel) 92%, #000000);
+}
+
+.app-shell.dark[class*="template-"] .message-row:hover {
+  border-left-color: var(--accent);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 12%, transparent), transparent 54%),
+    color-mix(in srgb, var(--panel) 96%, #000000);
+}
+
+.app-shell.dark[class*="template-"] .message-row.selected {
+  border-left-color: var(--gold);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent 58%),
+    color-mix(in srgb, var(--panel) 98%, #000000);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 34%, transparent);
+}
+
+.app-shell.dark[class*="template-"] .metric,
+.app-shell.dark[class*="template-"] .assistant-panel,
+.app-shell.dark[class*="template-"] .translation-panel,
+.app-shell.dark[class*="template-"] .attachments,
+.app-shell.dark[class*="template-"] .attachment-card {
+  border-color: color-mix(in srgb, var(--border) 70%, var(--accent));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 64%),
+    rgba(255, 255, 255, 0.035);
+}
+
+.app-shell.dark[class*="template-"] .mail-tabs button.active,
+.app-shell.dark[class*="template-"] .folder-list button.active,
+.app-shell.dark[class*="template-"] .compose-button,
+.app-shell.dark[class*="template-"] .send-button {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, transparent), transparent 68%),
+    rgba(255, 255, 255, 0.045);
+  color: var(--ink);
+}
+
+.app-shell.dark.template-heksenketel {
+  background:
+    radial-gradient(circle at 10% 8%, rgba(255, 64, 144, 0.16), transparent 280px),
+    radial-gradient(circle at 92% 14%, rgba(199, 139, 208, 0.13), transparent 260px),
+    var(--bg);
+}
+
+.app-shell.dark.template-librepost {
+  background:
+    linear-gradient(135deg, rgba(73, 213, 182, 0.12), transparent 38%),
+    radial-gradient(circle at 88% 6%, rgba(120, 174, 245, 0.12), transparent 240px),
+    var(--bg);
+}
+
+.app-shell.dark.template-executive {
+  background:
+    linear-gradient(180deg, rgba(79, 195, 223, 0.10), transparent 44%),
+    radial-gradient(circle at 82% 12%, rgba(239, 182, 90, 0.08), transparent 230px),
+    var(--bg);
+}
+
+.app-shell.dark.template-invoice {
+  background:
+    linear-gradient(90deg, rgba(114, 211, 154, 0.12), transparent 32%),
+    linear-gradient(180deg, rgba(242, 156, 99, 0.08), transparent 58%),
+    var(--bg);
+}
+
+.app-shell.dark.template-night {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(96, 165, 250, 0.16), transparent 280px),
+    radial-gradient(circle at 92% 12%, rgba(52, 211, 153, 0.11), transparent 250px),
+    var(--bg);
+}
+
+.app-shell.dark.template-compact {
+  background:
+    linear-gradient(90deg, rgba(148, 163, 184, 0.10), transparent 30%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.028) 0 1px, transparent 1px 24px),
+    var(--bg);
+}
+
+.app-shell.dark.template-crm {
+  background:
+    radial-gradient(circle at 8% 12%, rgba(167, 139, 250, 0.15), transparent 270px),
+    radial-gradient(circle at 90% 10%, rgba(103, 232, 249, 0.10), transparent 250px),
+    var(--bg);
+}
+
+.app-shell.dark.template-clean {
+  background:
+    linear-gradient(135deg, rgba(94, 234, 212, 0.09), transparent 36%),
+    var(--bg);
+}
+
+.app-shell.dark.template-support {
+  background:
+    radial-gradient(circle at 14% 8%, rgba(56, 189, 248, 0.14), transparent 260px),
+    linear-gradient(90deg, rgba(134, 239, 172, 0.08), transparent 42%),
+    var(--bg);
+}
+
+.app-shell.dark.template-editorial {
+  background:
+    linear-gradient(180deg, rgba(251, 113, 133, 0.11), transparent 38%),
+    radial-gradient(circle at 88% 16%, rgba(147, 197, 253, 0.11), transparent 250px),
+    var(--bg);
+}
+
+.app-shell.dark.template-zoho-look {
+  background:
+    linear-gradient(90deg, rgba(255, 107, 95, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(138, 180, 248, 0.10), transparent 50%),
+    var(--bg);
+}
+
+.app-shell.dark.template-contrast {
+  background:
+    linear-gradient(90deg, rgba(248, 250, 252, 0.07), transparent 24%),
+    linear-gradient(180deg, rgba(34, 211, 238, 0.10), transparent 48%),
+    var(--bg);
+}
+
+.app-shell.dark.template-paper-ledger {
+  background:
+    repeating-linear-gradient(0deg, rgba(240, 183, 90, 0.055) 0 1px, transparent 1px 31px),
+    radial-gradient(circle at 88% 8%, rgba(112, 214, 189, 0.10), transparent 260px),
+    var(--bg);
+}
+
+.app-shell.dark.template-command-wall {
+  background:
+    linear-gradient(90deg, rgba(37, 224, 164, 0.12), transparent 30%),
+    linear-gradient(rgba(111, 255, 211, 0.06) 1px, transparent 1px) 0 0 / 26px 26px,
+    var(--bg);
+}
+
+.app-shell.dark.template-cork-board {
+  background:
+    radial-gradient(circle at 12px 12px, rgba(250, 204, 21, 0.13) 0 2px, transparent 3px) 0 0 / 28px 28px,
+    linear-gradient(135deg, rgba(94, 234, 212, 0.10), transparent 38%),
+    var(--bg);
+}
+
+.app-shell.dark.template-pixel-mail {
+  background:
+    linear-gradient(90deg, rgba(0, 240, 255, 0.12), transparent 30%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 8px, transparent 8px 16px),
+    var(--bg);
+}
+
+.app-shell.dark.template-studio-cards {
+  background:
+    linear-gradient(135deg, rgba(94, 234, 212, 0.12), transparent 32%),
+    linear-gradient(315deg, rgba(251, 191, 36, 0.10), transparent 28%),
+    var(--bg);
+}
+
+.app-shell.dark.template-blueprint {
+  background:
+    linear-gradient(rgba(125, 211, 252, 0.10) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(90deg, rgba(125, 211, 252, 0.10) 1px, transparent 1px) 0 0 / 32px 32px,
+    var(--bg);
+}
+
+.app-shell.dark.template-sunrise-tiles {
+  background:
+    linear-gradient(135deg, rgba(251, 146, 60, 0.13), transparent 34%),
+    linear-gradient(315deg, rgba(110, 231, 183, 0.12), transparent 34%),
+    var(--bg);
+}
+
+.app-shell.dark.template-kleuter-vlekken {
+  background:
+    radial-gradient(circle at 11% 9%, rgba(255, 92, 154, 0.17), transparent 250px),
+    radial-gradient(circle at 90% 13%, rgba(68, 221, 202, 0.12), transparent 250px),
+    linear-gradient(135deg, rgba(255, 209, 102, 0.07), transparent 42%),
+    var(--bg);
+}
+
 .message-list {
   position: relative;
   height: 100%;
@@ -2776,8 +3034,11 @@ body.resizing-message-list {
 .layout-card {
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--panel);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 4%, transparent), transparent 58%),
+    var(--panel);
   color: var(--ink);
+  transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease, transform 140ms ease;
 }
 
 .template-card {
@@ -2794,7 +3055,17 @@ body.resizing-message-list {
 .template-card.active,
 .layout-card.active {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
-  background: color-mix(in srgb, var(--accent) 11%, var(--panel));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%),
+    color-mix(in srgb, var(--accent) 8%, var(--panel));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.template-card:hover,
+.layout-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
 }
 
 .template-card-top {
@@ -3022,14 +3293,24 @@ body.resizing-message-list {
 
 .app-shell.dark .template-card,
 .app-shell.dark .layout-card {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(169, 196, 181, 0.16);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 62%),
+    rgba(255, 255, 255, 0.04);
+  border-color: color-mix(in srgb, var(--border) 70%, var(--accent));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
 .app-shell.dark .template-card.active,
 .app-shell.dark .layout-card.active {
-  background: rgba(73, 213, 182, 0.12);
-  border-color: rgba(73, 213, 182, 0.34);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, transparent), transparent 66%),
+    rgba(255, 255, 255, 0.055);
+  border-color: color-mix(in srgb, var(--accent) 54%, var(--border));
+}
+
+.app-shell.dark .template-card:hover,
+.app-shell.dark .layout-card:hover {
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.045);
 }
 
 .preset-row {
