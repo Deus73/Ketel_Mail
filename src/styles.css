@@ -1269,13 +1269,13 @@ dt,
 
 .app-shell.template-kleuter-vlekken {
   background:
-    radial-gradient(circle at 8% 18%, rgba(255, 46, 122, 0.24) 0 18px, transparent 19px),
-    radial-gradient(circle at 18% 78%, rgba(46, 196, 182, 0.22) 0 24px, transparent 25px),
-    radial-gradient(circle at 92% 24%, rgba(106, 76, 147, 0.20) 0 22px, transparent 23px),
-    radial-gradient(circle at 82% 84%, rgba(255, 209, 102, 0.36) 0 30px, transparent 31px),
-    repeating-linear-gradient(-4deg, rgba(29, 29, 27, 0.045) 0 1px, transparent 1px 22px),
+    radial-gradient(circle at 8% 18%, color-mix(in srgb, var(--accent) 22%, transparent) 0 18px, transparent 19px),
+    radial-gradient(circle at 18% 78%, color-mix(in srgb, var(--sky) 20%, transparent) 0 24px, transparent 25px),
+    radial-gradient(circle at 92% 24%, color-mix(in srgb, var(--rose) 16%, transparent) 0 22px, transparent 23px),
+    radial-gradient(circle at 82% 84%, color-mix(in srgb, var(--gold) 28%, transparent) 0 30px, transparent 31px),
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 42%),
     var(--bg);
-  font-family: "Comic Sans MS", "Trebuchet MS", cursive;
+  font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
 }
 
 .app-shell.template-kleuter-vlekken .sidebar,
@@ -1288,56 +1288,95 @@ dt,
 .app-shell.template-kleuter-vlekken .search-box,
 .app-shell.template-kleuter-vlekken .compose-button,
 .app-shell.template-kleuter-vlekken .reader-toolbar button {
-  border: 2px solid #1d1d1b;
-  box-shadow: 4px 5px 0 rgba(29, 29, 27, 0.16);
+  border: 2px solid color-mix(in srgb, var(--border) 82%, var(--accent));
+  box-shadow: 4px 5px 0 color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .app-shell.template-kleuter-vlekken .sidebar {
-  transform: rotate(-0.25deg);
   background:
-    radial-gradient(circle at 24px 88px, rgba(255, 46, 122, 0.16) 0 18px, transparent 19px),
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 11%, var(--panel)), var(--panel) 58%),
+    radial-gradient(circle at 24px 88px, color-mix(in srgb, var(--accent) 14%, transparent) 0 18px, transparent 19px),
     var(--panel);
 }
 
 .app-shell.template-kleuter-vlekken .mail-area {
-  transform: rotate(0.12deg);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 7%, transparent), transparent 240px);
 }
 
 .app-shell.template-kleuter-vlekken .message-row {
-  margin: 11px;
+  margin: 9px 10px;
+  border-left: 7px solid color-mix(in srgb, var(--accent) 72%, var(--rose));
   background:
-    radial-gradient(circle at 92% 18%, rgba(255, 209, 102, 0.34) 0 10px, transparent 11px),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 42%),
+    radial-gradient(circle at 92% 18%, color-mix(in srgb, var(--gold) 24%, transparent) 0 10px, transparent 11px),
+    var(--panel);
+}
+
+.app-shell.template-kleuter-vlekken .message-row:hover {
+  border-left-color: var(--sky);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--sky) 9%, transparent), transparent 45%),
     var(--panel);
 }
 
 .app-shell.template-kleuter-vlekken .message-row:nth-of-type(2n) {
-  transform: rotate(-0.3deg);
-}
-
-.app-shell.template-kleuter-vlekken .message-row:nth-of-type(2n + 1) {
-  transform: rotate(0.25deg);
+  border-left-color: color-mix(in srgb, var(--sky) 75%, var(--accent));
 }
 
 .app-shell.template-kleuter-vlekken .message-row.selected {
   background:
-    radial-gradient(circle at 8% 22%, rgba(46, 196, 182, 0.22) 0 16px, transparent 17px),
-    color-mix(in srgb, var(--gold) 20%, var(--panel));
+    linear-gradient(90deg, color-mix(in srgb, var(--gold) 22%, transparent), transparent 48%),
+    color-mix(in srgb, var(--accent) 9%, var(--panel));
+  border-left-color: var(--gold);
+  box-shadow: 5px 6px 0 color-mix(in srgb, var(--gold) 26%, transparent);
 }
 
 .app-shell.template-kleuter-vlekken .section-title {
-  border-bottom: 3px dotted #1d1d1b;
-  background: color-mix(in srgb, var(--gold) 18%, var(--panel));
+  border-bottom: 3px solid color-mix(in srgb, var(--gold) 70%, var(--border));
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--gold) 18%, transparent), transparent 70%),
+    var(--panel);
 }
 
 .app-shell.template-kleuter-vlekken .brand-mark,
 .app-shell.template-kleuter-vlekken .urgent-indicator,
 .app-shell.template-kleuter-vlekken .mail-tabs button.active em {
-  border: 2px solid #1d1d1b;
+  border: 2px solid color-mix(in srgb, var(--border) 78%, var(--accent));
 }
 
 .app-shell.template-kleuter-vlekken .reader-header h1 {
   color: var(--rose);
-  text-shadow: 2px 2px 0 rgba(255, 209, 102, 0.70);
+  text-shadow: 2px 2px 0 color-mix(in srgb, var(--gold) 48%, transparent);
+}
+
+.app-shell.template-kleuter-vlekken .mail-tabs button.active,
+.app-shell.template-kleuter-vlekken .compose-button,
+.app-shell.template-kleuter-vlekken .send-button {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 20%, transparent), transparent 68%),
+    var(--panel);
+}
+
+.app-shell.template-kleuter-vlekken .metric,
+.app-shell.template-kleuter-vlekken .attachment-card,
+.app-shell.template-kleuter-vlekken .assistant-panel,
+.app-shell.template-kleuter-vlekken .translation-panel {
+  border-width: 2px;
+  box-shadow: 3px 4px 0 color-mix(in srgb, var(--rose) 13%, transparent);
+}
+
+.app-shell.dark.template-kleuter-vlekken .sidebar,
+.app-shell.dark.template-kleuter-vlekken .topbar,
+.app-shell.dark.template-kleuter-vlekken .message-list,
+.app-shell.dark.template-kleuter-vlekken .reader,
+.app-shell.dark.template-kleuter-vlekken .right-rail section,
+.app-shell.dark.template-kleuter-vlekken .metric,
+.app-shell.dark.template-kleuter-vlekken .message-row,
+.app-shell.dark.template-kleuter-vlekken .search-box,
+.app-shell.dark.template-kleuter-vlekken .compose-button,
+.app-shell.dark.template-kleuter-vlekken .reader-toolbar button {
+  border-color: rgba(255, 189, 219, 0.28);
+  box-shadow: 4px 5px 0 rgba(255, 92, 154, 0.11);
 }
 
 .message-list {

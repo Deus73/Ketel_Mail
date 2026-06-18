@@ -368,15 +368,15 @@ const templatePresets = [
   },
   {
     id: "kleuter-vlekken",
-    label: "Kleuter Vlekken",
-    tone: "Handgetekend met verfspetters",
+    label: "Candy Shell",
+    tone: "Snoepkleurig, stevig en leesbaar",
     theme: "light",
     layoutMode: "split",
-    density: "relaxed",
-    swatches: ["#ff2e7a", "#2ec4b6", "#ffd166", "#6a4c93"],
+    density: "comfortable",
+    swatches: ["#e91e63", "#00897b", "#ffb300", "#4a148c"],
     vars: {
-      light: { "--bg": "#fff9e8", "--panel": "#fffef7", "--panel-soft": "#fff6d8", "--panel-deep": "#ffe8a8", "--border": "#1d1d1b", "--ink": "#1b1b1b", "--ink-soft": "#5a5144", "--accent": "#ff2e7a", "--accent-dark": "#cf195d", "--sky": "#2ec4b6", "--gold": "#ffd166", "--rose": "#6a4c93" },
-      dark: { "--bg": "#17110d", "--panel": "#251c16", "--panel-soft": "#30231a", "--panel-deep": "#463221", "--border": "rgba(255, 229, 166, 0.24)", "--ink": "#fff8e6", "--ink-soft": "#d3c2a6", "--accent": "#ff6aa2", "--accent-dark": "#ff3f88", "--sky": "#4ee4d8", "--gold": "#ffd166", "--rose": "#c4a1ff" }
+      light: { "--bg": "#fff4f8", "--panel": "#ffffff", "--panel-soft": "#fff7fb", "--panel-deep": "#ffe0ec", "--border": "#241527", "--ink": "#171019", "--ink-soft": "#5f5263", "--accent": "#e91e63", "--accent-dark": "#ad1457", "--sky": "#00897b", "--gold": "#ffb300", "--rose": "#4a148c" },
+      dark: { "--bg": "#170d18", "--panel": "#24172a", "--panel-soft": "#312039", "--panel-deep": "#462b53", "--border": "rgba(255, 189, 219, 0.26)", "--ink": "#fff7fb", "--ink-soft": "#d9c3dd", "--accent": "#ff5c9a", "--accent-dark": "#ff2f7f", "--sky": "#44ddca", "--gold": "#ffd166", "--rose": "#d8b4fe" }
     }
   }
 ];
