@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import {
   Archive,
   Bell,
+  BookUser,
   Bot,
   CalendarDays,
   Check,
@@ -794,6 +795,17 @@ function loadSenderSettings() {
   }
 }
 
+function normalizeAddressBookContacts(contacts = []) {
+  return (Array.isArray(contacts) ? contacts : [])
+    .filter((contact) => contact?.email)
+    .map((contact) => ({
+      name: String(contact.name || "").trim(),
+      email: String(contact.email || "").trim(),
+      lastUsed: contact.lastUsed || "",
+      timesSent: Math.max(1, Number(contact.timesSent || 1))
+    }));
+}
+
 function loadFeedSettings() {
   try {
     const parsed = JSON.parse(localStorage.getItem("ketelmeel-feed-settings") || "{}");
@@ -1079,6 +1091,7 @@ function App() {
   const [logoBackdrop, setLogoBackdrop] = useState(() => localStorage.getItem("ketelmeel-logo-backdrop") || "white");
   const [logoThemeVars, setLogoThemeVars] = useState(loadLogoThemeVars);
   const [senderSettings, setSenderSettings] = useState(loadSenderSettings);
+  const [addressBook, setAddressBook] = useState([]);
   const [activeMailbox, setActiveMailbox] = useState(() => localStorage.getItem("ketelmeel-active-mailbox") || "");
   const [pendingMailboxSetup, setPendingMailboxSetup] = useState("");
   const [feedSettings, setFeedSettings] = useState(loadFeedSettings);
@@ -1101,6 +1114,15 @@ function App() {
   const mailboxRequestRef = useRef(0);
   const messageRequestRef = useRef(0);
   const mailboxOptions = useMemo(() => normalizeSenderOptions(senderSettings, status.mailbox), [senderSettings, status.mailbox]);
+
+  async function loadAddressBook() {
+    try {
+      const result = await api("/api/address-book");
+      setAddressBook(normalizeAddressBookContacts(result.contacts));
+    } catch (error) {
+      setToast(error.message);
+    }
+  }
 
   async function loadMailbox(folder = activeFolder, options = {}) {
     const requestId = mailboxRequestRef.current + 1;
@@ -1146,6 +1168,10 @@ function App() {
   useEffect(() => {
     loadMailbox(activeFolder);
   }, [activeFolder]);
+
+  useEffect(() => {
+    loadAddressBook();
+  }, []);
 
   function governmentFeedPath(refresh = false) {
     const params = new URLSearchParams();
@@ -2188,6 +2214,8 @@ function App() {
               ))}
             </section>
 
+            <AddressBookPanel contacts={addressBook} onCompose={(contact) => openCompose({ to: contact.email })} />
+
             <section>
               <div className="rail-heading">
                 <CalendarDays size={17} />
@@ -2215,10 +2243,12 @@ function App() {
         <ComposeModal
           signature={signature}
           senderOptions={senderOptions}
+          addressBook={addressBook}
           defaultFrom={senderSettings.defaultFrom || status.mailbox}
           context={composeContext}
           onClose={closeCompose}
           onToast={setToast}
+          onSentContacts={loadAddressBook}
         />
       ) : null}
       {settingsOpen ? (
@@ -2252,6 +2282,32 @@ function App() {
         </button>
       ) : null}
     </main>
+  );
+}
+
+function AddressBookPanel({ contacts = [], onCompose }) {
+  const visibleContacts = contacts.slice(0, 8);
+
+  return (
+    <section className="address-book-panel" aria-label="Adresboek">
+      <div className="rail-heading">
+        <BookUser size={17} />
+        <strong>Adresboek</strong>
+        <em>{contacts.length}</em>
+      </div>
+      {visibleContacts.length ? (
+        <div className="address-book-list">
+          {visibleContacts.map((contact) => (
+            <button key={contact.email} type="button" onClick={() => onCompose(contact)}>
+              <span>{contact.name || contact.email.split("@")[0]}</span>
+              <small>{contact.email}</small>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="address-book-empty">Nieuwe ontvangers verschijnen hier na verzenden.</p>
+      )}
+    </section>
   );
 }
 
@@ -2635,7 +2691,7 @@ function EmailBody({ message, view, translation }) {
   );
 }
 
-function ComposeModal({ signature, senderOptions = [], defaultFrom = "", context, onClose, onToast }) {
+function ComposeModal({ signature, senderOptions = [], addressBook = [], defaultFrom = "", context, onClose, onToast, onSentContacts }) {
   const replyTargetLanguage = normalizeLanguage(context?.targetLanguage || "");
   const replyTargetLabel = languageLabel(replyTargetLanguage);
   const [form, setForm] = useState(() => composeInitialForm(signature, context, defaultFrom));
@@ -2742,7 +2798,7 @@ function ComposeModal({ signature, senderOptions = [], defaultFrom = "", context
       }
       const preparedForm = replyTargetLanguage && replyReview ? replyReview : form;
       const body = preparedForm.format === "html" ? preparedForm.body || htmlToPlainText(preparedForm.htmlBody) : preparedForm.body;
-      await api(
+      const result = await api(
         "/api/send",
         {
           method: "POST",
@@ -2757,6 +2813,7 @@ function ComposeModal({ signature, senderOptions = [], defaultFrom = "", context
           })
         }
       );
+      if (result.contacts?.length) onSentContacts?.();
       onToast(replyTargetLanguage ? `Antwoord vertaald naar ${replyTargetLabel} en verzonden.` : "Bericht verzonden.");
       onClose();
     } catch (error) {
@@ -2820,7 +2877,12 @@ function ComposeModal({ signature, senderOptions = [], defaultFrom = "", context
             ))}
             {!senderOptions.length ? <option value="">Afzender uit serverinstellingen</option> : null}
           </select>
-          <input value={form.to} onChange={(event) => updateForm({ ...form, to: event.target.value })} placeholder="Ontvanger" />
+          <input value={form.to} onChange={(event) => updateForm({ ...form, to: event.target.value })} placeholder="Ontvanger" list="ketel-address-book" />
+          <datalist id="ketel-address-book">
+            {addressBook.map((contact) => (
+              <option key={contact.email} value={contact.name ? `${contact.name} <${contact.email}>` : contact.email} />
+            ))}
+          </datalist>
           <select value={tone} onChange={(event) => setTone(event.target.value)} aria-label="Toon">
             <option>Zakelijk</option>
             <option>Kort</option>

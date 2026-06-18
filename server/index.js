@@ -15,6 +15,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 const dataRoot = process.env.KETEL_MAIL_DATA_DIR ? path.resolve(process.env.KETEL_MAIL_DATA_DIR) : root;
 const envPath = path.join(dataRoot, ".env");
+const addressBookPath = path.join(dataRoot, "address-book.json");
 const app = express();
 const mailTimeoutMs = 12000;
 const maxSourceLength = 500000;
@@ -236,6 +237,94 @@ process.on("unhandledRejection", (reason) => {
 });
 
 const fallbackFolders = ["Inbox", "Archive", "Sent", "Drafts", "Spam", "Trash"];
+
+function isValidEmailAddress(value = "") {
+  return /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(String(value).trim());
+}
+
+function parseAddressList(value = "") {
+  const text = String(value || "");
+  const candidates = [];
+  const bracketPattern = /(?:"?([^"<,;]+?)"?\s*)?<([^<>\s@]+@[^<>\s@]+\.[^<>\s@]+)>/g;
+  let match;
+  while ((match = bracketPattern.exec(text))) {
+    candidates.push({ name: (match[1] || "").trim(), email: match[2].trim() });
+  }
+
+  const withoutBracketAddresses = text.replace(bracketPattern, " ");
+  for (const part of withoutBracketAddresses.split(/[;,]/)) {
+    const cleaned = part.trim().replace(/^mailto:/i, "");
+    const email = cleaned.match(/[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+/)?.[0] || "";
+    if (email) candidates.push({ name: cleaned.replace(email, "").replace(/["<>]/g, "").trim(), email });
+  }
+
+  const seen = new Set();
+  return candidates
+    .map((item) => ({
+      name: item.name.replace(/\s+/g, " ").slice(0, 120),
+      email: item.email.toLowerCase()
+    }))
+    .filter((item) => {
+      if (!isValidEmailAddress(item.email) || seen.has(item.email)) return false;
+      seen.add(item.email);
+      return true;
+    });
+}
+
+async function loadAddressBook() {
+  try {
+    const parsed = JSON.parse(await fs.readFile(addressBookPath, "utf8"));
+    const contacts = Array.isArray(parsed?.contacts) ? parsed.contacts : [];
+    return contacts
+      .filter((contact) => isValidEmailAddress(contact?.email))
+      .map((contact) => ({
+        name: String(contact.name || "").trim(),
+        email: String(contact.email).trim().toLowerCase(),
+        firstSeen: contact.firstSeen || new Date().toISOString(),
+        lastUsed: contact.lastUsed || contact.firstSeen || new Date().toISOString(),
+        timesSent: Math.max(1, Number(contact.timesSent || 1))
+      }))
+      .sort((a, b) => new Date(b.lastUsed) - new Date(a.lastUsed));
+  } catch (error) {
+    if (error.code === "ENOENT") return [];
+    throw error;
+  }
+}
+
+async function saveAddressBook(contacts) {
+  const sorted = [...contacts].sort((a, b) => new Date(b.lastUsed) - new Date(a.lastUsed));
+  await fs.writeFile(addressBookPath, JSON.stringify({ contacts: sorted }, null, 2), "utf8");
+  return sorted;
+}
+
+async function rememberSentRecipients(to) {
+  const recipients = parseAddressList(to);
+  if (!recipients.length) return [];
+
+  const now = new Date().toISOString();
+  const contacts = await loadAddressBook();
+  const byEmail = new Map(contacts.map((contact) => [contact.email, contact]));
+
+  for (const recipient of recipients) {
+    const existing = byEmail.get(recipient.email);
+    if (existing) {
+      existing.name = recipient.name || existing.name;
+      existing.lastUsed = now;
+      existing.timesSent = Math.max(1, Number(existing.timesSent || 0) + 1);
+    } else {
+      byEmail.set(recipient.email, {
+        name: recipient.name,
+        email: recipient.email,
+        firstSeen: now,
+        lastUsed: now,
+        timesSent: 1
+      });
+    }
+  }
+
+  await saveAddressBook([...byEmail.values()]);
+  return recipients;
+}
 
 const demoMessages = [
   {
@@ -1552,13 +1641,21 @@ app.post("/api/translate", async (req, res, next) => {
   }
 });
 
+app.get("/api/address-book", async (_req, res, next) => {
+  try {
+    res.json({ contacts: await loadAddressBook() });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post("/api/send", async (req, res, next) => {
   try {
     const { to, from, subject, body, htmlBody, format } = req.body;
     const plainText = String(body || "").trim() || htmlToPlainText(htmlBody);
     const safeHtml = format === "html" && htmlBody ? sanitizeEmailHtml(String(htmlBody)) : "";
     if (!to || !subject || (!plainText && !safeHtml)) return res.status(400).json({ error: "Vul ontvanger, onderwerp en bericht in." });
-    if (isDemoMode()) return res.json({ ok: true, id: `demo-${Date.now()}` });
+    if (isDemoMode()) return res.json({ ok: true, id: `demo-${Date.now()}`, contacts: await rememberSentRecipients(to) });
     const cfg = requireRealConfig();
     const mailFrom = String(from || "").trim() || cfg.from;
     const transporter = nodemailer.createTransport({
@@ -1577,7 +1674,8 @@ app.post("/api/send", async (req, res, next) => {
       text: plainText,
       ...(safeHtml ? { html: safeHtml } : {})
     });
-    res.json({ ok: true, id: info.messageId });
+    const contacts = await rememberSentRecipients(to);
+    res.json({ ok: true, id: info.messageId, contacts });
   } catch (error) {
     next(error);
   }

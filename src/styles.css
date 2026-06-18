@@ -2726,6 +2726,53 @@ body.resizing-message-list {
   gap: 8px;
 }
 
+.rail-heading em {
+  margin-left: auto;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel-soft));
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.address-book-list {
+  display: grid;
+  gap: 6px;
+}
+
+.address-book-list button {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 9px;
+  border-color: color-mix(in srgb, var(--accent) 20%, var(--border));
+}
+
+.address-book-list span,
+.address-book-list small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.address-book-list span {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 820;
+}
+
+.address-book-list small {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.address-book-empty {
+  color: var(--ink-soft);
+}
+
 .reader-empty {
   display: grid;
   place-items: center;
