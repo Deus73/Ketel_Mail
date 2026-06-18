@@ -2877,7 +2877,8 @@ body.resizing-message-list {
 }
 
 .settings-summary,
-.provider-hint {
+.provider-hint,
+.security-summary {
   display: grid;
   gap: 4px;
   margin: 14px 0;
@@ -2890,6 +2891,30 @@ body.resizing-message-list {
 .app-shell.dark .settings-summary {
   border-color: rgba(73, 213, 182, 0.30);
   background: rgba(73, 213, 182, 0.075);
+}
+
+.security-summary {
+  border-color: color-mix(in srgb, var(--mint) 34%, var(--border));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--mint) 14%, transparent), transparent 62%),
+    var(--panel);
+}
+
+.security-summary > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.security-summary svg {
+  color: var(--accent);
+}
+
+.app-shell.dark .security-summary {
+  border-color: rgba(73, 213, 182, 0.32);
+  background:
+    linear-gradient(135deg, rgba(73, 213, 182, 0.12), transparent 62%),
+    rgba(16, 28, 31, 0.88);
 }
 
 .provider-hint {
@@ -2937,6 +2962,7 @@ body.resizing-message-list {
 
 .settings-summary span,
 .provider-hint span,
+.security-summary span,
 .settings-message {
   color: var(--ink-soft);
 }

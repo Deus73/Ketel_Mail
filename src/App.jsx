@@ -2513,6 +2513,7 @@ function EmailBody({ message, view, translation }) {
 <html>
   <head>
     <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data: cid:; style-src 'unsafe-inline'; font-src data:; base-uri 'none'; form-action 'none'; object-src 'none';" />
     <base target="_blank" />
     <style>
       html, body { margin: 0; padding: 0; background: #ffffff; color: #17201d; }
@@ -3294,6 +3295,14 @@ function SettingsModal({
                   <input type="checkbox" checked={form.smtpSecure} onChange={(event) => updateField("smtpSecure", event.target.checked)} />
                   SMTP via SSL/TLS
                 </label>
+              </div>
+
+              <div className="security-summary">
+                <div>
+                  <ShieldCheck size={18} />
+                  <strong>Beveiliging actief</strong>
+                </div>
+                <span>HTML-mail draait afgezonderd, links openen zonder referrer, bijlagen krijgen veilige headers en API-antwoorden worden niet opgeslagen in de browsercache.</span>
               </div>
 
               <div className="settings-summary">

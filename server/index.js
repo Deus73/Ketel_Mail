@@ -164,6 +164,36 @@ const governmentFeedSources = [
   { label: "WODC", url: "https://www.wodc.nl/actueel/nieuws?keyword=drugs" }
 ];
 
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  "connect-src 'self' https:",
+  "frame-src 'self' https://www.youtube-nocookie.com https://open.spotify.com",
+  "media-src 'self' blob: data: https:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'"
+].join("; ");
+
+app.disable("x-powered-by");
+app.use((req, res, next) => {
+  res.setHeader("Content-Security-Policy", contentSecurityPolicy);
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()");
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  next();
+});
+app.use("/api", (_req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, private");
+  res.setHeader("Pragma", "no-cache");
+  next();
+});
 app.use(express.json({ limit: "1mb" }));
 
 await fs.mkdir(dataRoot, { recursive: true });
@@ -423,7 +453,10 @@ function sanitizeEmailHtml(html = "") {
       th: ["width", "height", "colspan", "rowspan", "align", "valign"],
       font: ["color", "face", "size"]
     },
-    allowedSchemes: ["http", "https", "mailto", "tel", "data", "cid"],
+    allowedSchemes: ["http", "https", "mailto", "tel"],
+    allowedSchemesByTag: {
+      img: ["http", "https", "data", "cid"]
+    },
     allowedStyles: {
       "*": {
         color: [/^#[0-9a-f]+$/i, /^rgb\(/, /^rgba\(/, /^[a-z]+$/i],
@@ -444,7 +477,7 @@ function sanitizeEmailHtml(html = "") {
       }
     },
     transformTags: {
-      a: sanitizeHtml.simpleTransform("a", { target: "_blank", rel: "noreferrer noopener" })
+      a: sanitizeHtml.simpleTransform("a", { target: "_blank", rel: "noopener noreferrer nofollow" })
     }
   });
 }

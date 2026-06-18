@@ -94,6 +94,12 @@ Ketel Mail is de webmail-laag. Voor echte mailhosting heb je daarnaast een mails
 - Licht en donker thema.
 - Docker-ready en volledig self-hostable.
 
+## Beveiliging
+
+Ketel Mail draait op je eigen server en slaat live mailinstellingen lokaal op in `.env`. De app gebruikt strenge browserheaders, een Content Security Policy, veilige bijlageheaders, opgeschoonde HTML-mail, een sandbox voor de mailviewer en geen browsercache voor API-antwoorden. Gebruik voor zakelijke mailboxen altijd SSL/TLS en bij voorkeur een app-wachtwoord in plaats van je hoofdwachtwoord.
+
+Zie [SECURITY.md](SECURITY.md) en [docs/concurrentie-check.md](docs/concurrentie-check.md) voor de beveiligingscheck tegenover betaalde maildiensten.
+
 ## Belangrijk
 
 Deze versie gebruikt server-side env-instellingen voor één live mailbox tegelijk. Zet echte mailgegevens alleen in je eigen `.env`; commit die nooit naar GitHub.
