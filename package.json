@@ -99,7 +99,8 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Ketel Mail",
       "runAfterFinish": true,
-      "deleteAppDataOnUninstall": false
+      "deleteAppDataOnUninstall": false,
+      "include": "build/installer.nsh"
     }
   }
 }
