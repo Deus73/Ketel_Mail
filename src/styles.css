@@ -2825,7 +2825,10 @@ body.resizing-message-list {
 .compose-modal {
   display: grid;
   gap: 12px;
+  width: min(1120px, calc(100vw - 28px));
+  max-height: calc(100vh - 28px);
   padding: 16px;
+  overflow: auto;
 }
 
 .modal-header {
@@ -2837,6 +2840,50 @@ body.resizing-message-list {
   display: grid;
   grid-template-columns: minmax(170px, 0.75fr) minmax(0, 1fr) 140px 150px;
   gap: 10px;
+}
+
+.compose-address-grid,
+.compose-options-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.compose-address-grid {
+  grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1.4fr) auto;
+  align-items: end;
+}
+
+.compose-address-grid label,
+.compose-options-grid label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.compose-address-grid label span {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
+.compose-recipient-actions {
+  display: flex;
+  align-items: end;
+}
+
+.compose-recipient-actions button {
+  min-height: 43px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-soft);
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.compose-options-grid {
+  grid-template-columns: minmax(0, 1fr) 135px 135px 155px;
 }
 
 .reply-translate-note {
@@ -2942,6 +2989,19 @@ body.resizing-message-list {
   gap: 8px;
 }
 
+.rich-compose-tools {
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel-soft) 80%, transparent);
+}
+
+.rich-compose-tools button {
+  min-height: 32px;
+  padding: 0 10px;
+}
+
 .compose-tools select {
   width: auto;
   min-height: 34px;
@@ -2951,6 +3011,106 @@ body.resizing-message-list {
 .send-button {
   justify-self: end;
   padding: 0 18px;
+}
+
+.compose-studio {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  min-height: min(52vh, 520px);
+}
+
+.compose-studio.has-preview {
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+}
+
+.compose-editor-pane,
+.compose-preview-pane {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-soft);
+}
+
+.compose-editor-pane {
+  display: grid;
+  grid-template-rows: auto minmax(300px, 1fr) auto;
+  overflow: hidden;
+}
+
+.compose-template-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.compose-template-row button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  font-weight: 760;
+}
+
+.compose-modal textarea.compose-editor {
+  min-height: 300px;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  resize: vertical;
+  background: var(--panel);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.compose-footer-options,
+.compose-send-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.compose-footer-options {
+  padding: 9px 11px;
+  border-top: 1px solid var(--border);
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.compose-footer-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 760;
+}
+
+.compose-footer-options input {
+  width: auto;
+}
+
+.compose-preview-pane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  padding: 10px;
+  gap: 9px;
+}
+
+.compose-preview-pane iframe {
+  width: 100%;
+  min-height: 320px;
+  height: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.compose-send-row {
+  justify-content: flex-end;
 }
 
 .settings-modal {
@@ -4240,6 +4400,16 @@ body.resizing-message-list {
     cursor: row-resize;
   }
 
+  .compose-address-grid,
+  .compose-options-grid,
+  .compose-studio.has-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .compose-preview-pane iframe {
+    min-height: 240px;
+  }
+
   .mobile-only {
     display: grid;
   }
@@ -4287,7 +4457,9 @@ body.resizing-message-list {
   }
 
   .reply-button,
-  .compose-grid {
+  .compose-grid,
+  .compose-address-grid,
+  .compose-options-grid {
     width: 100%;
   }
 
@@ -4314,6 +4486,9 @@ body.resizing-message-list {
   }
 
   .compose-grid,
+  .compose-address-grid,
+  .compose-options-grid,
+  .compose-studio.has-preview,
   .settings-modal dl div,
   .settings-grid,
   .appearance-quickbar,

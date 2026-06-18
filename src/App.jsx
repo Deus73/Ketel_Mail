@@ -4,6 +4,7 @@ import {
   Archive,
   Bell,
   BookUser,
+  Bold,
   Bot,
   CalendarDays,
   Check,
@@ -21,8 +22,11 @@ import {
   FileText,
   Image as ImageIcon,
   Inbox,
+  Italic,
   Layers3,
   Languages,
+  Link,
+  List,
   ListMusic,
   Mail,
   Maximize2,
@@ -44,6 +48,7 @@ import {
   Sun,
   Tag,
   Trash2,
+  Underline,
   Upload,
   X,
   Youtube,
@@ -759,10 +764,14 @@ function composeInitialForm(signature, context = null, defaultFrom = "") {
   return {
     from: defaultFrom,
     to: context?.to || "",
+    cc: "",
+    bcc: "",
     subject: context?.subject || "",
     body: settings.autoInsert ? textSignature : "",
     htmlBody: settings.autoInsert ? htmlSignature : "",
-    format
+    format,
+    priority: "normal",
+    readReceipt: false
   };
 }
 
@@ -2701,6 +2710,11 @@ function ComposeModal({ signature, senderOptions = [], addressBook = [], default
   const [replyTranslationProvider, setReplyTranslationProvider] = useState("");
   const [replyReview, setReplyReview] = useState(null);
   const [tone, setTone] = useState("Zakelijk");
+  const [showCcBcc, setShowCcBcc] = useState(Boolean(context?.cc || context?.bcc));
+  const [previewOpen, setPreviewOpen] = useState(true);
+  const editorRef = useRef(null);
+  const previewHtml = form.format === "html" ? form.htmlBody : plainTextToHtml(form.body);
+  const wordCount = (form.body || htmlToPlainText(form.htmlBody)).trim().split(/\s+/).filter(Boolean).length;
 
   function updateForm(next) {
     setReplyTranslated(false);
@@ -2749,6 +2763,53 @@ function ComposeModal({ signature, senderOptions = [], addressBook = [], default
 
   function setQuickText(value) {
     updateForm((current) => ({ ...current, body: value, htmlBody: plainTextToHtml(value) }));
+  }
+
+  function applyEditorFormat(textWrap, htmlWrap, fallback = "tekst") {
+    const field = form.format === "html" ? "htmlBody" : "body";
+    const value = String(form[field] || "");
+    const textarea = editorRef.current;
+    const start = textarea?.selectionStart ?? value.length;
+    const end = textarea?.selectionEnd ?? value.length;
+    const selected = value.slice(start, end) || fallback;
+    const replacement = form.format === "html" ? htmlWrap(selected) : textWrap(selected);
+    const nextValue = `${value.slice(0, start)}${replacement}${value.slice(end)}`;
+
+    updateForm((current) => {
+      if (field === "htmlBody") return { ...current, htmlBody: nextValue, body: htmlToPlainText(nextValue) };
+      return { ...current, body: nextValue, htmlBody: plainTextToHtml(nextValue) };
+    });
+
+    window.setTimeout(() => {
+      editorRef.current?.focus();
+      const cursor = start + replacement.length;
+      editorRef.current?.setSelectionRange(cursor, cursor);
+    }, 0);
+  }
+
+  function insertTemplate(kind) {
+    const templates = {
+      followup: {
+        subject: "Opvolging van ons gesprek",
+        body: "Beste,\n\nDank voor je tijd. Hieronder zet ik de belangrijkste punten kort op een rij:\n\n- \n- \n- \n\nGraag hoor ik of dit zo klopt en wat de beste volgende stap is.\n\nMet vriendelijke groet,"
+      },
+      offer: {
+        subject: "Voorstel / offerte",
+        body: "Beste,\n\nZoals besproken stuur ik hierbij mijn voorstel.\n\nDoel:\nAanpak:\nPlanning:\nVolgende stap:\n\nAls je akkoord bent, kan ik dit direct voor je in gang zetten.\n\nMet vriendelijke groet,"
+      },
+      appointment: {
+        subject: "Bevestiging afspraak",
+        body: "Beste,\n\nHierbij bevestig ik onze afspraak.\n\nDatum:\nTijd:\nOnderwerp:\nLocatie / link:\n\nLaat gerust weten als er nog iets aangepast moet worden.\n\nMet vriendelijke groet,"
+      }
+    };
+    const template = templates[kind];
+    if (!template) return;
+    updateForm((current) => ({
+      ...current,
+      subject: current.subject || template.subject,
+      body: template.body,
+      htmlBody: plainTextToHtml(template.body)
+    }));
   }
 
   function addSmartFinish() {
@@ -2804,11 +2865,15 @@ function ComposeModal({ signature, senderOptions = [], addressBook = [], default
           method: "POST",
           body: JSON.stringify({
             to: preparedForm.to,
+            cc: preparedForm.cc,
+            bcc: preparedForm.bcc,
             from: preparedForm.from,
             subject: preparedForm.subject,
             body,
             htmlBody: preparedForm.format === "html" ? preparedForm.htmlBody : "",
             format: preparedForm.format,
+            priority: preparedForm.priority,
+            readReceipt: preparedForm.readReceipt,
             tone
           })
         }
@@ -2868,73 +2933,156 @@ function ComposeModal({ signature, senderOptions = [], addressBook = [], default
             <pre>{replyReview.body}</pre>
           </section>
         ) : null}
-        <div className="compose-grid">
-          <select value={form.from} onChange={(event) => updateForm({ ...form, from: event.target.value })} aria-label="Afzender">
-            {senderOptions.map((address) => (
-              <option key={address} value={address}>
-                Van {address}
-              </option>
-            ))}
-            {!senderOptions.length ? <option value="">Afzender uit serverinstellingen</option> : null}
-          </select>
-          <input value={form.to} onChange={(event) => updateForm({ ...form, to: event.target.value })} placeholder="Ontvanger" list="ketel-address-book" />
+        <div className="compose-address-grid">
+          <label>
+            <span>Van</span>
+            <select value={form.from} onChange={(event) => updateForm({ ...form, from: event.target.value })} aria-label="Afzender">
+              {senderOptions.map((address) => (
+                <option key={address} value={address}>
+                  {address}
+                </option>
+              ))}
+              {!senderOptions.length ? <option value="">Afzender uit serverinstellingen</option> : null}
+            </select>
+          </label>
+          <label>
+            <span>Aan</span>
+            <input value={form.to} onChange={(event) => updateForm({ ...form, to: event.target.value })} placeholder="Ontvanger" list="ketel-address-book" />
+          </label>
+          <div className="compose-recipient-actions">
+            <button type="button" onClick={() => setShowCcBcc((value) => !value)}>
+              Cc/Bcc
+            </button>
+          </div>
           <datalist id="ketel-address-book">
             {addressBook.map((contact) => (
               <option key={contact.email} value={contact.name ? `${contact.name} <${contact.email}>` : contact.email} />
             ))}
           </datalist>
+          {showCcBcc ? (
+            <>
+              <label>
+                <span>Cc</span>
+                <input value={form.cc} onChange={(event) => updateForm({ ...form, cc: event.target.value })} placeholder="Kopie" list="ketel-address-book" />
+              </label>
+              <label>
+                <span>Bcc</span>
+                <input value={form.bcc} onChange={(event) => updateForm({ ...form, bcc: event.target.value })} placeholder="Blinde kopie" list="ketel-address-book" />
+              </label>
+            </>
+          ) : null}
+        </div>
+
+        <div className="compose-options-grid">
+          <input value={form.subject} onChange={(event) => updateForm({ ...form, subject: event.target.value })} placeholder="Onderwerp" />
           <select value={tone} onChange={(event) => setTone(event.target.value)} aria-label="Toon">
             <option>Zakelijk</option>
             <option>Kort</option>
             <option>Warm</option>
             <option>Direct</option>
+            <option>Premium</option>
           </select>
           <select value={form.format} onChange={(event) => changeFormat(event.target.value)} aria-label="Berichttype">
-            <option value="text">Tekst enkel</option>
-            <option value="html">HTML</option>
+            <option value="text">Tekst</option>
+            <option value="html">HTML mooi</option>
+          </select>
+          <select value={form.priority} onChange={(event) => updateForm({ ...form, priority: event.target.value })} aria-label="Prioriteit">
+            <option value="normal">Normaal</option>
+            <option value="high">Hoge prioriteit</option>
+            <option value="low">Lage prioriteit</option>
           </select>
         </div>
-        <input value={form.subject} onChange={(event) => updateForm({ ...form, subject: event.target.value })} placeholder="Onderwerp" />
-        <div className="compose-tools">
-          <button type="button" onClick={addSmartFinish}>
-            <Sparkles size={16} />
-            Smart finish
+
+        <div className="compose-tools rich-compose-tools">
+          <button type="button" onClick={() => applyEditorFormat((value) => `**${value}**`, (value) => `<strong>${value}</strong>`)}>
+            <Bold size={16} />
           </button>
-          <button type="button" onClick={() => setQuickText("Dank voor je bericht.\n\nIk pak dit op en kom hier vandaag op terug.")}>
-            <Zap size={16} />
-            Snelle reactie
+          <button type="button" onClick={() => applyEditorFormat((value) => `_${value}_`, (value) => `<em>${value}</em>`)}>
+            <Italic size={16} />
+          </button>
+          <button type="button" onClick={() => applyEditorFormat((value) => value, (value) => `<u>${value}</u>`)}>
+            <Underline size={16} />
+          </button>
+          <button type="button" onClick={() => applyEditorFormat((value) => `\n- ${value}`, (value) => `<ul><li>${value}</li></ul>`, "punt")}>
+            <List size={16} />
+          </button>
+          <button type="button" onClick={() => applyEditorFormat((value) => `\n> ${value}`, (value) => `<blockquote>${value}</blockquote>`, "citaat")}>
+            <Code2 size={16} />
+          </button>
+          <button type="button" onClick={() => applyEditorFormat((value) => value, (value) => `<a href="https://">${value}</a>`, "linktekst")}>
+            <Link size={16} />
+          </button>
+          <button type="button" onClick={() => applyEditorFormat((value) => value, (value) => `<span style="color:#0d7c72;font-weight:700">${value}</span>`)}>
+            <Sparkles size={16} />
           </button>
           <button type="button" onClick={insertSignature}>
             <PenLine size={16} />
             Handtekening
           </button>
-          {replyTargetLanguage ? (
-            <button type="button" onClick={() => translateReplyDraft()} disabled={replyTranslating}>
-              <Languages size={16} />
-              {replyTranslating ? "Vertalen..." : `Vertaal naar ${replyTargetLabel}`}
-            </button>
+          <button type="button" onClick={() => setPreviewOpen((value) => !value)}>
+            <Eye size={16} />
+            Preview
+          </button>
+        </div>
+
+        <div className={`compose-studio ${previewOpen ? "has-preview" : ""}`}>
+          <section className="compose-editor-pane">
+            <div className="compose-template-row">
+              <button type="button" onClick={() => insertTemplate("followup")}>Opvolging</button>
+              <button type="button" onClick={() => insertTemplate("offer")}>Voorstel</button>
+              <button type="button" onClick={() => insertTemplate("appointment")}>Afspraak</button>
+              <button type="button" onClick={() => setQuickText("Dank voor je bericht.\n\nIk pak dit op en kom hier vandaag op terug.")}>Snelle reactie</button>
+              <button type="button" onClick={addSmartFinish}>Smart finish</button>
+              {replyTargetLanguage ? (
+                <button type="button" onClick={() => translateReplyDraft()} disabled={replyTranslating}>
+                  <Languages size={16} />
+                  {replyTranslating ? "Vertalen..." : `Vertaal naar ${replyTargetLabel}`}
+                </button>
+              ) : null}
+            </div>
+            {form.format === "html" ? (
+              <textarea
+                ref={editorRef}
+                className="html-compose compose-editor"
+                value={form.htmlBody}
+                onChange={(event) => updateHtmlBody(event.target.value)}
+                placeholder="<p>Schrijf je mooie mail</p>"
+              />
+            ) : (
+              <textarea ref={editorRef} className="compose-editor" value={form.body} onChange={(event) => updateBody(event.target.value)} placeholder="Schrijf je bericht" />
+            )}
+            <div className="compose-footer-options">
+              <label>
+                <input type="checkbox" checked={form.readReceipt} onChange={(event) => updateForm({ ...form, readReceipt: event.target.checked })} />
+                Leesbevestiging vragen
+              </label>
+              <span>{wordCount} woorden</span>
+            </div>
+          </section>
+          {previewOpen ? (
+            <aside className="compose-preview-pane" aria-label="Voorbeeld">
+              <strong>Voorbeeld</strong>
+              <iframe
+                title="Voorbeeld van nieuwe mail"
+                sandbox=""
+                srcDoc={`<!doctype html><html><head><meta charset="utf-8"><style>body{font:15px/1.55 Arial,sans-serif;color:#17201d;padding:18px;margin:0}a{color:#0d7c72}blockquote{border-left:4px solid #0d7c72;margin:12px 0;padding:8px 12px;background:#f3f8f3}ul{padding-left:22px}</style></head><body>${previewHtml || "<p></p>"}</body></html>`}
+              />
+            </aside>
           ) : null}
         </div>
-        {form.format === "html" ? (
-          <textarea
-            className="html-compose"
-            value={form.htmlBody}
-            onChange={(event) => updateHtmlBody(event.target.value)}
-            placeholder="<p>Schrijf je bericht</p>"
-          />
-        ) : (
-          <textarea value={form.body} onChange={(event) => updateBody(event.target.value)} placeholder="Schrijf je bericht" />
-        )}
-        <button className="send-button" disabled={sending || replyTranslating}>
-          <Send size={17} />
-          {sending || replyTranslating
-            ? "Vertalen..."
-            : replyTargetLanguage && !replyReview
-              ? "Controleer vertaling"
-              : replyTargetLanguage
-                ? "Vertaalde versie versturen"
-                : "Verstuur"}
-        </button>
+
+        <div className="compose-send-row">
+          <button className="send-button" disabled={sending || replyTranslating}>
+            <Send size={17} />
+            {sending || replyTranslating
+              ? "Vertalen..."
+              : replyTargetLanguage && !replyReview
+                ? "Controleer vertaling"
+                : replyTargetLanguage
+                  ? "Vertaalde versie versturen"
+                  : "Verstuur"}
+          </button>
+        </div>
       </form>
     </div>
   );

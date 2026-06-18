@@ -1651,11 +1651,12 @@ app.get("/api/address-book", async (_req, res, next) => {
 
 app.post("/api/send", async (req, res, next) => {
   try {
-    const { to, from, subject, body, htmlBody, format } = req.body;
+    const { to, cc, bcc, from, subject, body, htmlBody, format, priority, readReceipt } = req.body;
     const plainText = String(body || "").trim() || htmlToPlainText(htmlBody);
     const safeHtml = format === "html" && htmlBody ? sanitizeEmailHtml(String(htmlBody)) : "";
-    if (!to || !subject || (!plainText && !safeHtml)) return res.status(400).json({ error: "Vul ontvanger, onderwerp en bericht in." });
-    if (isDemoMode()) return res.json({ ok: true, id: `demo-${Date.now()}`, contacts: await rememberSentRecipients(to) });
+    const recipientText = [to, cc, bcc].filter(Boolean).join(", ");
+    if (!recipientText || !subject || (!plainText && !safeHtml)) return res.status(400).json({ error: "Vul ontvanger, onderwerp en bericht in." });
+    if (isDemoMode()) return res.json({ ok: true, id: `demo-${Date.now()}`, contacts: await rememberSentRecipients(recipientText) });
     const cfg = requireRealConfig();
     const mailFrom = String(from || "").trim() || cfg.from;
     const transporter = nodemailer.createTransport({
@@ -1670,11 +1671,15 @@ app.post("/api/send", async (req, res, next) => {
     const info = await transporter.sendMail({
       from: mailFrom,
       to,
+      ...(cc ? { cc } : {}),
+      ...(bcc ? { bcc } : {}),
       subject,
       text: plainText,
+      priority: priority === "high" ? "high" : priority === "low" ? "low" : "normal",
+      ...(readReceipt ? { headers: { "Disposition-Notification-To": mailFrom, "Return-Receipt-To": mailFrom } } : {}),
       ...(safeHtml ? { html: safeHtml } : {})
     });
-    const contacts = await rememberSentRecipients(to);
+    const contacts = await rememberSentRecipients(recipientText);
     res.json({ ok: true, id: info.messageId, contacts });
   } catch (error) {
     next(error);
