@@ -68,6 +68,11 @@
       "server/**/*",
       "electron/**/*",
       "public/icons/**/*",
+      ".env.example",
+      "docker-compose.yml",
+      "Dockerfile",
+      "README.md",
+      "SECURITY.md",
       "package.json"
     ],
     "extraMetadata": {
