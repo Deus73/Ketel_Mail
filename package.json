@@ -2,7 +2,10 @@
   "name": "ketel-mail",
   "version": "0.1.0",
   "description": "Zelf-hostbare webmail-app met desktopvenster voor Ketel Mail.",
-  "author": "Deus73",
+  "author": {
+    "name": "Deus73",
+    "email": "deus73@users.noreply.github.com"
+  },
   "private": true,
   "type": "module",
   "main": "electron/main.cjs",
@@ -83,6 +86,10 @@
         "deb"
       ],
       "category": "Network"
+    },
+    "deb": {
+      "maintainer": "Deus73 <deus73@users.noreply.github.com>",
+      "synopsis": "Lokale Ketel Mail webmail"
     },
     "mac": {
       "icon": "public/icons/ketel-mail-icon.png",

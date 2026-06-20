@@ -1,10 +1,15 @@
 #!/usr/bin/env sh
 set -eu
 
-cd "$(dirname "$0")"
+INSTALLED_APP="${HOME}/.local/share/ketel-mail"
+if [ -d "$INSTALLED_APP" ]; then
+  cd "$INSTALLED_APP"
+else
+  cd "$(dirname "$0")"
+fi
 
 if [ ! -d node_modules ]; then
-  echo "node_modules ontbreekt. Eerst installeren:"
+  echo "Ketel Mail is nog niet geinstalleerd. Start eerst:"
   echo "  ./install-debian-parrot.sh"
   exit 1
 fi
