@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
 import tls from "node:tls";
+import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import nodemailer from "nodemailer";
 import { ImapFlow } from "imapflow";
@@ -16,6 +17,8 @@ const root = path.resolve(__dirname, "..");
 const dataRoot = process.env.KETEL_MAIL_DATA_DIR ? path.resolve(process.env.KETEL_MAIL_DATA_DIR) : root;
 const envPath = path.join(dataRoot, ".env");
 const addressBookPath = path.join(dataRoot, "address-book.json");
+const musicLibraryPath = path.join(dataRoot, "music-library.json");
+const musicFilesDir = path.join(dataRoot, "music-files");
 const app = express();
 const mailTimeoutMs = 12000;
 const maxSourceLength = 500000;
@@ -184,8 +187,8 @@ const contentSecurityPolicy = [
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
   "connect-src 'self' https:",
-  "frame-src 'self' https://www.youtube-nocookie.com https://open.spotify.com",
-  "media-src 'self' blob: data: https:",
+  "frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://youtube.com https://music.youtube.com https://open.spotify.com",
+  "media-src 'self' blob: data: https: https://*.googlevideo.com https://*.youtube.com https://*.ytimg.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -208,9 +211,10 @@ app.use("/api", (_req, res, next) => {
   next();
 });
 app.use(compression({ threshold: 1024 }));
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "80mb" }));
 
 await fs.mkdir(dataRoot, { recursive: true });
+await fs.mkdir(musicFilesDir, { recursive: true });
 await loadEnvFile();
 
 const port = Number(process.env.PORT || 8080);
@@ -324,6 +328,41 @@ async function rememberSentRecipients(to) {
 
   await saveAddressBook([...byEmail.values()]);
   return recipients;
+}
+
+function safeMusicName(name = "") {
+  return String(name || "muziekbestand")
+    .replace(/[\\/:*?"<>|]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 160) || "muziekbestand";
+}
+
+async function loadMusicLibrary() {
+  try {
+    const parsed = JSON.parse(await fs.readFile(musicLibraryPath, "utf8"));
+    const tracks = Array.isArray(parsed?.tracks) ? parsed.tracks : [];
+    return tracks
+      .filter((track) => track?.id && track?.fileName)
+      .map((track) => ({
+        id: String(track.id),
+        name: safeMusicName(track.name),
+        fileName: path.basename(String(track.fileName)),
+        contentType: String(track.contentType || "audio/mpeg"),
+        size: Number(track.size || 0),
+        addedAt: track.addedAt || new Date().toISOString()
+      }))
+      .sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+  } catch (error) {
+    if (error.code === "ENOENT") return [];
+    throw error;
+  }
+}
+
+async function saveMusicLibrary(tracks) {
+  const sorted = [...tracks].sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+  await fs.writeFile(musicLibraryPath, JSON.stringify({ tracks: sorted }, null, 2), "utf8");
+  return sorted;
 }
 
 const demoMessages = [
@@ -1705,6 +1744,76 @@ app.post("/api/spam-cleaner", async (req, res, next) => {
     });
 
     res.json({ ok: true, ...result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/music/library", async (_req, res, next) => {
+  try {
+    res.json({ tracks: await loadMusicLibrary() });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/music/upload", async (req, res, next) => {
+  try {
+    const { name, contentType, dataUrl } = req.body || {};
+    const type = String(contentType || "").toLowerCase();
+    const match = String(dataUrl || "").match(/^data:([^;,]+);base64,([a-z0-9+/=\r\n]+)$/i);
+    if (!match) return res.status(400).json({ error: "Upload bevat geen geldig audiobestand." });
+    const detectedType = String(match[1] || type).toLowerCase();
+    if (!detectedType.startsWith("audio/")) return res.status(400).json({ error: "Gebruik een audiobestand zoals mp3, ogg, wav of m4a." });
+
+    const buffer = Buffer.from(match[2].replace(/\s/g, ""), "base64");
+    if (!buffer.length) return res.status(400).json({ error: "Audiobestand is leeg." });
+    if (buffer.length > 70 * 1024 * 1024) return res.status(413).json({ error: "Audiobestand is te groot. Gebruik maximaal 70 MB." });
+
+    const id = randomUUID();
+    const originalName = safeMusicName(name || "muziekbestand");
+    const extension = path.extname(originalName).slice(0, 12) || (detectedType.includes("ogg") ? ".ogg" : detectedType.includes("wav") ? ".wav" : detectedType.includes("mp4") || detectedType.includes("m4a") ? ".m4a" : ".mp3");
+    const fileName = `${id}${extension}`;
+    await fs.writeFile(path.join(musicFilesDir, fileName), buffer);
+
+    const track = {
+      id,
+      name: originalName,
+      fileName,
+      contentType: detectedType,
+      size: buffer.length,
+      addedAt: new Date().toISOString()
+    };
+    const tracks = await loadMusicLibrary();
+    await saveMusicLibrary([track, ...tracks].slice(0, 100));
+    res.json({ ok: true, track });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/music/files/:id", async (req, res, next) => {
+  try {
+    const tracks = await loadMusicLibrary();
+    const track = tracks.find((item) => item.id === req.params.id);
+    if (!track) return res.status(404).json({ error: "Muziekbestand niet gevonden." });
+    const filePath = path.join(musicFilesDir, track.fileName);
+    res.setHeader("Content-Type", track.contentType || "audio/mpeg");
+    res.setHeader("Cache-Control", "private, max-age=86400");
+    res.sendFile(filePath);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete("/api/music/library/:id", async (req, res, next) => {
+  try {
+    const tracks = await loadMusicLibrary();
+    const track = tracks.find((item) => item.id === req.params.id);
+    const nextTracks = tracks.filter((item) => item.id !== req.params.id);
+    if (track) await fs.unlink(path.join(musicFilesDir, track.fileName)).catch(() => {});
+    await saveMusicLibrary(nextTracks);
+    res.json({ ok: true });
   } catch (error) {
     next(error);
   }

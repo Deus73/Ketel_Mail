@@ -786,7 +786,8 @@ function composeInitialForm(signature, context = null, defaultFrom = "") {
 
 function loadMusicQueue() {
   try {
-    return JSON.parse(localStorage.getItem("ketelmeel-music-queue") || "[]");
+    const rows = JSON.parse(localStorage.getItem("ketelmeel-music-queue") || "[]");
+    return Array.isArray(rows) ? rows.filter((item) => item?.id && (item.embedUrl || item.mediaUrl)) : [];
   } catch {
     return [];
   }
@@ -1004,6 +1005,7 @@ function parseYouTubeMusicUrl(rawUrl) {
     if (parts[0] === "watch") videoId = url.searchParams.get("v") || "";
     if (parts[0] === "embed") videoId = parts[1] || "";
     if (parts[0] === "shorts") videoId = parts[1] || "";
+    if (parts[0] === "live") videoId = parts[1] || "";
   }
 
   if (list) {
@@ -1012,7 +1014,7 @@ function parseYouTubeMusicUrl(rawUrl) {
       sourceLabel: "YouTube",
       title: "YouTube playlist",
       subtitle: list,
-      embedUrl: `https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(list)}&rel=0&modestbranding=1`,
+      embedUrl: `https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(list)}&rel=0&modestbranding=1&playsinline=1`,
       externalUrl: rawUrl
     };
   }
@@ -1023,7 +1025,7 @@ function parseYouTubeMusicUrl(rawUrl) {
       sourceLabel: "YouTube",
       title: "YouTube video",
       subtitle: videoId,
-      embedUrl: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?rel=0&modestbranding=1`,
+      embedUrl: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?rel=0&modestbranding=1&playsinline=1`,
       externalUrl: rawUrl
     };
   }
@@ -1059,12 +1061,25 @@ function parseSpotifyMusicUrl(rawUrl) {
 
 function parseMusicUrl(rawUrl) {
   const value = rawUrl.trim();
-  if (!value) throw new Error("Plak eerst een YouTube of Spotify link.");
+  if (!value) throw new Error("Plak eerst een YouTube of Spotify link, of upload een lokaal audiobestand.");
   const parsed = parseYouTubeMusicUrl(value) || parseSpotifyMusicUrl(value);
   if (!parsed) throw new Error("Deze link wordt nog niet herkend. Gebruik een publieke YouTube of Spotify link.");
   return {
     ...parsed,
     id: `${parsed.provider}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  };
+}
+
+function musicTrackToQueueItem(track) {
+  return {
+    id: `local-${track.id}`,
+    provider: "local",
+    sourceLabel: "Lokaal",
+    title: track.name || "Lokale muziek",
+    subtitle: track.size ? formatBytes(track.size) : "offline opgeslagen",
+    mediaUrl: `/api/music/files/${encodeURIComponent(track.id)}`,
+    externalUrl: `/api/music/files/${encodeURIComponent(track.id)}`,
+    libraryId: track.id
   };
 }
 
@@ -2718,6 +2733,7 @@ function MusicDock({ onToast }) {
   const [queue, setQueue] = useState(loadMusicQueue);
   const [activeId, setActiveId] = useState(() => localStorage.getItem("ketelmeel-music-active") || "");
   const [url, setUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const activeItem = useMemo(() => queue.find((item) => item.id === activeId) || queue[0] || null, [activeId, queue]);
 
@@ -2735,6 +2751,24 @@ function MusicDock({ onToast }) {
     if (activeId) localStorage.setItem("ketelmeel-music-active", activeId);
     else localStorage.removeItem("ketelmeel-music-active");
   }, [activeId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api("/api/music/library")
+      .then((result) => {
+        if (cancelled) return;
+        const localItems = (result.tracks || []).map(musicTrackToQueueItem);
+        if (!localItems.length) return;
+        setQueue((current) => {
+          const onlineItems = current.filter((item) => item.provider !== "local");
+          return [...localItems, ...onlineItems].slice(0, 60);
+        });
+      })
+      .catch((error) => onToast(error.message));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function addMusic(event) {
     event.preventDefault();
@@ -2758,7 +2792,49 @@ function MusicDock({ onToast }) {
   }
 
   function removeMusic(id) {
-    setQueue((current) => current.filter((item) => item.id !== id));
+    const item = queue.find((entry) => entry.id === id);
+    setQueue((current) => current.filter((entry) => entry.id !== id));
+    if (item?.provider === "local" && item.libraryId) {
+      api(`/api/music/library/${encodeURIComponent(item.libraryId)}`, { method: "DELETE" }).catch((error) => onToast(error.message));
+    }
+  }
+
+  function uploadLocalMusic(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("audio/")) {
+      onToast("Kies een audiobestand zoals mp3, ogg, wav of m4a.");
+      return;
+    }
+    if (file.size > 70 * 1024 * 1024) {
+      onToast("Audiobestand is te groot. Gebruik maximaal 70 MB.");
+      return;
+    }
+    setUploading(true);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const result = await api("/api/music/upload", {
+          method: "POST",
+          body: JSON.stringify({ name: file.name, contentType: file.type, dataUrl: reader.result })
+        });
+        const item = musicTrackToQueueItem(result.track);
+        setQueue((current) => [item, ...current.filter((entry) => entry.id !== item.id)].slice(0, 60));
+        setActiveId(item.id);
+        setOpen(true);
+        onToast("Lokaal muziekbestand opgeslagen en toegevoegd.");
+      } catch (error) {
+        onToast(error.message);
+      } finally {
+        setUploading(false);
+      }
+    };
+    reader.onerror = () => {
+      setUploading(false);
+      onToast("Muziekbestand kon niet worden gelezen.");
+    };
+    reader.readAsDataURL(file);
   }
 
   return (
@@ -2782,16 +2858,23 @@ function MusicDock({ onToast }) {
           <button type="submit" aria-label="Toevoegen">
             <Plus size={17} />
           </button>
+          <label className={`music-upload ${uploading ? "busy" : ""}`} title="Lokaal audiobestand bewaren">
+            <Upload size={16} />
+            <input type="file" accept="audio/*" onChange={uploadLocalMusic} disabled={uploading} />
+          </label>
         </form>
 
         <div className="music-player">
-          {activeItem ? (
+          {activeItem?.provider === "local" ? (
+            <audio key={activeItem.mediaUrl} src={activeItem.mediaUrl} controls autoPlay preload="metadata" />
+          ) : activeItem ? (
             <iframe
               key={activeItem.embedUrl}
               title={activeItem.title}
               src={activeItem.embedUrl}
               loading="lazy"
               allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              allowFullScreen
             />
           ) : (
             <div className="music-empty">
@@ -2804,7 +2887,7 @@ function MusicDock({ onToast }) {
         <div className="music-queue" aria-label="Playlist">
           {queue.map((item) => {
             const active = activeItem?.id === item.id;
-            const Icon = item.provider === "youtube" ? Youtube : Music2;
+            const Icon = item.provider === "youtube" ? Youtube : item.provider === "local" ? Download : Music2;
             return (
               <div className={`music-row ${active ? "active" : ""}`} key={item.id}>
                 <button type="button" onClick={() => setActiveId(item.id)}>

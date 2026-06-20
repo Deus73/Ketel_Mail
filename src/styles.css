@@ -4186,6 +4186,7 @@ body.resizing-message-list {
 }
 
 .music-add button,
+.music-upload,
 .music-row a,
 .music-row > button:last-child {
   flex: 0 0 auto;
@@ -4198,6 +4199,23 @@ body.resizing-message-list {
   background: var(--panel-soft);
   color: var(--ink);
   text-decoration: none;
+}
+
+.music-upload {
+  position: relative;
+  cursor: pointer;
+}
+
+.music-upload.busy {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.music-upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .music-player {
@@ -4213,6 +4231,13 @@ body.resizing-message-list {
   width: 100%;
   height: 220px;
   border: 0;
+}
+
+.music-player audio {
+  display: block;
+  width: calc(100% - 18px);
+  margin: 70px 9px 0;
+  accent-color: var(--accent);
 }
 
 .music-empty {
@@ -4282,6 +4307,7 @@ body.resizing-message-list {
 
 .app-shell.dark .music-add input,
 .app-shell.dark .music-add button,
+.app-shell.dark .music-upload,
 .app-shell.dark .music-row a,
 .app-shell.dark .music-row > button {
   background: rgba(255, 255, 255, 0.045);
