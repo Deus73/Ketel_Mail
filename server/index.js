@@ -1565,6 +1565,51 @@ app.post("/api/messages/:folder/:id/move", async (req, res, next) => {
   }
 });
 
+app.patch("/api/messages/:folder/:id/flags", async (req, res, next) => {
+  try {
+    const { folder, id } = req.params;
+    const updates = {};
+    if (typeof req.body?.read === "boolean") updates.read = req.body.read;
+    if (typeof req.body?.starred === "boolean") updates.starred = req.body.starred;
+    if (!Object.keys(updates).length) return res.status(400).json({ error: "Kies minstens een vlag om aan te passen." });
+
+    if (isDemoMode()) {
+      const message = demoMessages.find((item) => item.folder === folder && item.id === id);
+      if (!message) return res.status(404).json({ error: "Bericht niet gevonden." });
+      if (typeof updates.read === "boolean") message.read = updates.read;
+      if (typeof updates.starred === "boolean") message.starred = updates.starred;
+      return res.json({ ok: true, demo: true, id, folder, ...updates });
+    }
+
+    const result = await withImap(async (client, cfg) => {
+      const uid = Number(id);
+      if (!Number.isSafeInteger(uid) || uid < 1) {
+        const err = new Error("Ongeldig bericht.");
+        err.status = 400;
+        throw err;
+      }
+
+      const lock = await client.getMailboxLock(folder);
+      try {
+        const addFlags = [];
+        const removeFlags = [];
+        if (typeof updates.read === "boolean") (updates.read ? addFlags : removeFlags).push("\\Seen");
+        if (typeof updates.starred === "boolean") (updates.starred ? addFlags : removeFlags).push("\\Flagged");
+        if (addFlags.length) await client.messageFlagsAdd(uid, addFlags, { uid: true });
+        if (removeFlags.length) await client.messageFlagsRemove(uid, removeFlags, { uid: true });
+        clearMessageCachesForFolder(cfg, folder);
+        return { id, folder, ...updates };
+      } finally {
+        lock.release();
+      }
+    });
+
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.get("/api/messages/:folder/:id/attachments/:attachmentId", async (req, res, next) => {
   try {
     const { folder, id, attachmentId } = req.params;

@@ -28,6 +28,8 @@ import {
   List,
   ListMusic,
   Mail,
+  MailCheck,
+  MailOpen,
   Maximize2,
   Menu,
   Minimize2,
@@ -41,7 +43,9 @@ import {
   Search,
   Send,
   Settings,
+  ShieldAlert,
   ShieldCheck,
+  ShieldOff,
   Sparkles,
   Star,
   Sun,
@@ -1361,9 +1365,21 @@ function App() {
         return;
       }
 
-      if (event.key === "Delete" || event.key === "Backspace") {
+  if (event.key === "Delete" || event.key === "Backspace") {
         event.preventDefault();
         moveSelectedToSpecialFolder("trash");
+        return;
+      }
+
+      if (event.key.toLowerCase() === "j") {
+        event.preventDefault();
+        moveSelectedToSpecialFolder(isSpamFolderName(selectedEnriched?.folder) ? "not-spam" : "spam");
+        return;
+      }
+
+      if (event.key.toLowerCase() === "m") {
+        event.preventDefault();
+        markSelectedReadStatus(!selectedEnriched?.read);
         return;
       }
 
@@ -1545,6 +1561,7 @@ function App() {
     const marked = applyMessageMarks(selectedMessage, messageMarks);
     return { ...marked, priority: inferPriority(marked) };
   }, [selectedMessage, messageMarks]);
+  const selectedIsSpam = isSpamFolderName(selectedEnriched?.folder);
   const selectedMessageKey = messageKey(selectedEnriched);
   const selectedTranslation = selectedMessageKey ? translationCache[selectedMessageKey] : null;
   const translationBusy = Boolean(selectedMessageKey && translatingId === selectedMessageKey);
@@ -1627,21 +1644,37 @@ function App() {
     if (autoTranslate && selectedEnriched) translateMessage(selectedEnriched, true);
   }, [autoTranslate, selectedMessage?.id]);
 
-  function toggleMessageMark(message, field) {
+  async function toggleMessageMark(message, field) {
     if (!message) return;
     const key = messageKey(message);
     const currentValue = Boolean(message[field]);
+    const nextValue = !currentValue;
     setMessageMarks((marks) => {
       const nextMarks = {
         ...marks,
         [key]: {
           ...(marks[key] || {}),
-          [field]: !currentValue
+          [field]: nextValue
         }
       };
       localStorage.setItem("ketelpost-message-marks", JSON.stringify(nextMarks));
       return nextMarks;
     });
+    if (field === "starred" && status.configComplete) {
+      try {
+        await api(`/api/messages/${encodeURIComponent(message.folder)}/${encodeURIComponent(message.id)}/flags`, {
+          method: "PATCH",
+          body: JSON.stringify({ starred: nextValue })
+        });
+        setMessages((current) => current.map((item) => (item.id === message.id && item.folder === message.folder ? { ...item, starred: nextValue } : item)));
+        if (selectedMessage?.id === message.id && selectedMessage?.folder === message.folder) {
+          setSelectedMessage((current) => (current ? { ...current, starred: nextValue } : current));
+        }
+      } catch (error) {
+        setToast(error.message);
+        return;
+      }
+    }
     setToast(
       field === "starred"
         ? currentValue
@@ -1771,8 +1804,35 @@ function App() {
     return true;
   }
 
+  function specialFolderTarget(kind) {
+    const map = {
+      archive: {
+        label: "Archiveren",
+        folder: findArchiveFolderName(folders),
+        missing: "Geen archiefmap gevonden. Maak in je mailserver een map Archive of Archief en klik daarna op Vernieuw."
+      },
+      trash: {
+        label: "Verwijderen",
+        folder: findTrashFolderName(folders),
+        missing: "Geen prullenbak gevonden. Maak in je mailserver een map Trash, Afval of Prullenbak en klik daarna op Vernieuw."
+      },
+      spam: {
+        label: "Als spam markeren",
+        folder: findSpamFolderName(folders),
+        missing: "Geen spammap gevonden. Maak in je mailserver een map Spam, Junk of Ongewenst en klik daarna op Vernieuw."
+      },
+      "not-spam": {
+        label: "Uit spam halen",
+        folder: findInboxFolderName(folders),
+        missing: "Geen Inbox gevonden. Maak in je mailserver een map Inbox of Postvak IN en klik daarna op Vernieuw."
+      }
+    };
+    return map[kind] || map.archive;
+  }
+
   async function moveSelectedToSpecialFolder(kind) {
-    const label = kind === "trash" ? "Verwijderen" : "Archiveren";
+    const action = specialFolderTarget(kind);
+    const label = action.label;
     if (!ensureActionReady(label)) return;
     await moveMessageToSpecialFolder(selectedEnriched, kind);
   }
@@ -1784,16 +1844,42 @@ function App() {
       setToast("Vul bij Serverinstellingen je mailbox, wachtwoord/app-wachtwoord, IMAP server en SMTP server in. Daarna werken de mailknoppen automatisch.");
       return;
     }
-    const targetFolder = kind === "trash" ? findTrashFolderName(folders) : findArchiveFolderName(folders);
+    const action = specialFolderTarget(kind);
+    const targetFolder = action.folder;
     if (!targetFolder) {
-      setToast(
-        kind === "trash"
-          ? "Geen prullenbak gevonden. Maak in je mailserver een map Trash, Afval of Prullenbak en klik daarna op Vernieuw."
-          : "Geen archiefmap gevonden. Maak in je mailserver een map Archive of Archief en klik daarna op Vernieuw."
-      );
+      setToast(action.missing);
       return;
     }
     await moveMessageToFolder(message, targetFolder);
+  }
+
+  async function markMessageReadStatus(message, read) {
+    if (!message) return;
+    if (!status.configComplete) {
+      setSettingsOpen(true);
+      setToast("Vul bij Serverinstellingen je mailbox, wachtwoord/app-wachtwoord, IMAP server en SMTP server in. Daarna werken gelezen/ongelezen automatisch.");
+      return;
+    }
+
+    try {
+      await api(`/api/messages/${encodeURIComponent(message.folder)}/${encodeURIComponent(message.id)}/flags`, {
+        method: "PATCH",
+        body: JSON.stringify({ read })
+      });
+      setMessages((current) => current.map((item) => (item.id === message.id && item.folder === message.folder ? { ...item, read } : item)));
+      if (selectedMessage?.id === message.id && selectedMessage?.folder === message.folder) {
+        setSelectedMessage((current) => (current ? { ...current, read } : current));
+      }
+      setToast(read ? "Bericht gemarkeerd als gelezen." : "Bericht gemarkeerd als ongelezen.");
+      await loadMailbox(activeFolder, { refresh: true });
+    } catch (error) {
+      setToast(error.message);
+    }
+  }
+
+  async function markSelectedReadStatus(read) {
+    if (!ensureActionReady(read ? "Markeer gelezen" : "Markeer ongelezen")) return;
+    await markMessageReadStatus(selectedEnriched, read);
   }
 
   function fakeAction(label) {
@@ -1836,6 +1922,10 @@ function App() {
     if (action === "reply") openReply(message);
     if (action === "archive") moveMessageToSpecialFolder(message, "archive");
     if (action === "trash") moveMessageToSpecialFolder(message, "trash");
+    if (action === "spam") moveMessageToSpecialFolder(message, "spam");
+    if (action === "not-spam") moveMessageToSpecialFolder(message, "not-spam");
+    if (action === "mark-read") markMessageReadStatus(message, true);
+    if (action === "mark-unread") markMessageReadStatus(message, false);
     if (action === "star") toggleMessageMark(message, "starred");
     if (action === "urgent") toggleMessageMark(message, "urgent");
     if (action === "translate") translateMessage(message);
@@ -2134,10 +2224,20 @@ function App() {
               Archiveer
               <kbd>A</kbd>
             </button>
+            <button type="button" role="menuitem" onClick={() => runMessageMenuAction(isSpamFolderName(messageMenu.message.folder) ? "not-spam" : "spam")}>
+              {isSpamFolderName(messageMenu.message.folder) ? <ShieldOff size={16} /> : <ShieldAlert size={16} />}
+              {isSpamFolderName(messageMenu.message.folder) ? "Geen spam" : "Naar spam"}
+              <kbd>J</kbd>
+            </button>
             <button type="button" role="menuitem" className="danger" onClick={() => runMessageMenuAction("trash")}>
               <Trash2 size={16} />
               Prullenbak
               <kbd>Del</kbd>
+            </button>
+            <button type="button" role="menuitem" onClick={() => runMessageMenuAction(messageMenu.message.read ? "mark-unread" : "mark-read")}>
+              {messageMenu.message.read ? <MailOpen size={16} /> : <MailCheck size={16} />}
+              {messageMenu.message.read ? "Markeer ongelezen" : "Markeer gelezen"}
+              <kbd>M</kbd>
             </button>
             <div className="folder-context-divider" />
             <button type="button" role="menuitem" onClick={() => runMessageMenuAction("star")}>
@@ -2350,13 +2450,25 @@ function App() {
             {selectedEnriched ? (
               <>
                 <div className="reader-toolbar">
+                  <button onClick={() => openReply(selectedEnriched)}>
+                    <PenLine size={17} />
+                    Antwoord
+                  </button>
                   <button onClick={() => moveSelectedToSpecialFolder("archive")}>
                     <Archive size={17} />
                     Archiveer
                   </button>
+                  <button className={selectedIsSpam ? "not-spam-action" : "spam-action"} onClick={() => moveSelectedToSpecialFolder(selectedIsSpam ? "not-spam" : "spam")}>
+                    {selectedIsSpam ? <ShieldOff size={17} /> : <ShieldAlert size={17} />}
+                    {selectedIsSpam ? "Geen spam" : "Spam"}
+                  </button>
                   <button className="danger-action" onClick={() => moveSelectedToSpecialFolder("trash")}>
                     <Trash2 size={17} />
                     Prullenbak
+                  </button>
+                  <button onClick={() => markSelectedReadStatus(!selectedEnriched.read)}>
+                    {selectedEnriched.read ? <MailOpen size={17} /> : <MailCheck size={17} />}
+                    {selectedEnriched.read ? "Ongelezen" : "Gelezen"}
                   </button>
                   <button className={`mark-button star-mark ${selectedEnriched.starred ? "active" : ""}`} onClick={() => toggleMessageMark(selectedEnriched, "starred")}>
                     <Star size={17} fill={selectedEnriched.starred ? "currentColor" : "none"} />

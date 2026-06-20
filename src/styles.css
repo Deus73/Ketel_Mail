@@ -2188,6 +2188,26 @@ body.resizing-message-list {
   background: color-mix(in srgb, var(--rose) 13%, var(--panel));
 }
 
+.reader-toolbar .spam-action {
+  border-color: color-mix(in srgb, var(--rose) 42%, var(--border));
+  background: color-mix(in srgb, var(--rose) 8%, var(--panel));
+  color: color-mix(in srgb, var(--rose) 86%, var(--ink));
+}
+
+.reader-toolbar .spam-action:hover {
+  background: color-mix(in srgb, var(--rose) 14%, var(--panel));
+}
+
+.reader-toolbar .not-spam-action {
+  border-color: color-mix(in srgb, var(--accent) 46%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+  color: color-mix(in srgb, var(--accent) 76%, var(--ink));
+}
+
+.reader-toolbar .not-spam-action:hover {
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel));
+}
+
 .reader-toolbar .star-mark.active {
   border-color: color-mix(in srgb, var(--gold) 62%, var(--border));
   background: color-mix(in srgb, var(--gold) 17%, var(--panel));
