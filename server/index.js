@@ -450,7 +450,7 @@ function envConfig() {
     smtpPort: Number(process.env.SMTP_PORT || 465),
     smtpSecure: process.env.SMTP_SECURE !== "false",
     from: process.env.MAIL_FROM || process.env.MAILBOX_USER,
-    translateProvider: process.env.TRANSLATE_PROVIDER || "mymemory",
+    translateProvider: process.env.TRANSLATE_PROVIDER || "libretranslate",
     translateUrl: process.env.TRANSLATE_URL || "http://127.0.0.1:5000",
     translateApiKey: process.env.TRANSLATE_API_KEY || ""
   };
@@ -498,7 +498,7 @@ function safeSettings() {
     smtpPort: cfg.smtpPort || 465,
     smtpSecure: cfg.smtpSecure,
     mailFrom: cfg.from || "",
-    translateProvider: cfg.translateProvider || "mymemory",
+    translateProvider: cfg.translateProvider || "libretranslate",
     translateUrl: cfg.translateUrl || "",
     translateApiKeySet: Boolean(cfg.translateApiKey),
     envFile: envPath
@@ -519,7 +519,7 @@ async function saveSettings(settings) {
     SMTP_PORT: String(settings.smtpPort || 465),
     SMTP_SECURE: settings.smtpSecure === false ? "false" : "true",
     MAIL_FROM: settings.mailFrom || settings.mailboxUser || "",
-    TRANSLATE_PROVIDER: ["libretranslate", "mymemory"].includes(settings.translateProvider) ? settings.translateProvider : current.translateProvider || "mymemory",
+    TRANSLATE_PROVIDER: ["libretranslate", "mymemory"].includes(settings.translateProvider) ? settings.translateProvider : current.translateProvider || "libretranslate",
     TRANSLATE_URL: settings.translateUrl || current.translateUrl || "http://127.0.0.1:5000",
     TRANSLATE_API_KEY: settings.translateApiKey || current.translateApiKey || ""
   };
@@ -923,6 +923,16 @@ function translateEndpoint(baseUrl) {
     throw err;
   }
   return new URL(`${base}/translate`).toString();
+}
+
+function translateLanguagesEndpoint(baseUrl) {
+  const base = String(baseUrl || "").trim().replace(/\/+$/, "");
+  if (!base) {
+    const err = new Error("Vertaalserver ontbreekt. Vul een LibreTranslate URL in bij Serverinstellingen.");
+    err.status = 400;
+    throw err;
+  }
+  return new URL(`${base}/languages`).toString();
 }
 
 function normalizeLanguageCode(language, fallback = "en") {
@@ -1823,6 +1833,31 @@ app.post("/api/translate", async (req, res, next) => {
   try {
     const { text, source, target } = req.body || {};
     res.json(await translateText({ text, source, target }));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/translate/languages", async (_req, res, next) => {
+  try {
+    const cfg = envConfig();
+    const response = await fetch(translateLanguagesEndpoint(cfg.translateUrl), {
+      headers: cfg.translateApiKey ? { Authorization: `Bearer ${cfg.translateApiKey}` } : undefined
+    });
+    const languages = await response.json().catch(async () => ({ error: await response.text().catch(() => "") }));
+    if (!response.ok || !Array.isArray(languages)) {
+      const err = new Error(languages?.error || languages?.message || "LibreTranslate gaf geen taallijst terug.");
+      err.status = response.status || 502;
+      throw err;
+    }
+    res.json({
+      provider: "LibreTranslate",
+      url: cfg.translateUrl,
+      count: languages.length,
+      expected: 96,
+      ok: languages.length >= 96,
+      languages
+    });
   } catch (error) {
     next(error);
   }

@@ -60,7 +60,7 @@ import {
 import "./styles.css";
 
 const fallbackFolders = ["Inbox", "Archive", "Sent", "Drafts", "Spam", "Trash"];
-const defaultLogoUrl = "https://i.imgur.com/SCRxodL.png";
+const defaultLogoUrl = "/icons/ketel-mail-icon.png";
 
 const folderIcons = {
   Inbox,
@@ -3933,7 +3933,7 @@ function SettingsModal({
     smtpPort: 465,
     smtpSecure: true,
     mailFrom: "",
-    translateProvider: "mymemory",
+    translateProvider: "libretranslate",
     translateUrl: "http://127.0.0.1:5000",
     translateApiKey: ""
   });
@@ -3941,6 +3941,8 @@ function SettingsModal({
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [diagnostics, setDiagnostics] = useState(null);
+  const [translateLanguages, setTranslateLanguages] = useState(null);
+  const [checkingTranslateLanguages, setCheckingTranslateLanguages] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -3957,7 +3959,7 @@ function SettingsModal({
           smtpPort: settings.smtpPort || 465,
           smtpSecure: settings.smtpSecure !== false,
           mailFrom: settings.mailFrom || "",
-          translateProvider: settings.translateProvider || "mymemory",
+          translateProvider: settings.translateProvider || "libretranslate",
           translateUrl: settings.translateUrl || "http://127.0.0.1:5000",
           translateApiKey: ""
         });
@@ -4019,6 +4021,26 @@ function SettingsModal({
   function useFreeOnlineTranslate() {
     setForm((current) => ({ ...current, translateProvider: "mymemory" }));
     setMessage("Gratis online vertaling is actief. Voor privacygevoelige mail kun je LibreTranslate/self-hosted kiezen.");
+  }
+
+  async function checkLibreTranslateLanguages() {
+    setCheckingTranslateLanguages(true);
+    setTranslateLanguages(null);
+    setMessage("");
+    try {
+      await api("/api/settings", { method: "POST", body: JSON.stringify(form) });
+      const result = await api("/api/translate/languages");
+      setTranslateLanguages(result);
+      setMessage(
+        result.ok
+          ? `LibreTranslate is bereikbaar met ${result.count} talen. 96-talen doel gehaald.`
+          : `LibreTranslate is bereikbaar met ${result.count} talen. Voor 96 talen moet de server alle taalpakketten laden.`
+      );
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setCheckingTranslateLanguages(false);
+    }
   }
 
   async function save(event) {
@@ -4132,15 +4154,15 @@ function SettingsModal({
                 <label>
                   Vertaalservice
                   <select value={form.translateProvider} onChange={(event) => updateField("translateProvider", event.target.value)}>
+                    <option value="libretranslate">LibreTranslate lokaal/offline</option>
                     <option value="mymemory">Gratis online MyMemory</option>
-                    <option value="libretranslate">LibreTranslate / eigen server</option>
                   </select>
                 </label>
                 <label>
-                  Online vertalen
-                  <button className="secondary-button" type="button" onClick={useFreeOnlineTranslate}>
+                  Talen controleren
+                  <button className="secondary-button" type="button" onClick={checkLibreTranslateLanguages} disabled={checkingTranslateLanguages}>
                     <Languages size={16} />
-                    Gebruik gratis online
+                    {checkingTranslateLanguages ? "Controle..." : "LibreTranslate 96"}
                   </button>
                 </label>
                 <label className="wide">
@@ -4182,8 +4204,16 @@ function SettingsModal({
                 <span>
                   {form.translateProvider === "mymemory"
                     ? "Gebruikt MyMemory online zonder API-key. Korte stukken tekst worden naar een externe gratis vertaaldienst gestuurd."
-                    : "Gebruikt je eigen LibreTranslate URL of een compatible server. Beter voor privacy en grotere teksten."}
+                    : "Gebruikt je lokale LibreTranslate URL. Met de meegeleverde Docker service kan dit offline blijven nadat de taalmodellen lokaal aanwezig zijn."}
                 </span>
+                {translateLanguages ? (
+                  <em>
+                    {translateLanguages.count} talen gevonden. Doel: {translateLanguages.expected} talen.
+                  </em>
+                ) : null}
+                <button className="secondary-button" type="button" onClick={useFreeOnlineTranslate}>
+                  Online fallback MyMemory
+                </button>
               </div>
 
               <div className="settings-summary">
