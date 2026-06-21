@@ -1234,6 +1234,15 @@ function App() {
     loadAddressBook();
   }, []);
 
+  useEffect(() => {
+    if (logoDataUrl) return;
+    api("/api/appearance/logo-meta")
+      .then((result) => {
+        if (result.logo?.url) setLogoDataUrl(result.logo.url);
+      })
+      .catch(() => {});
+  }, []);
+
   function governmentFeedPath(refresh = false) {
     const params = new URLSearchParams();
     if (refresh) params.set("refresh", "1");
@@ -3540,9 +3549,21 @@ function AppearancePanel({ appearance, onChange }) {
       const logoDataUrl = String(reader.result || "");
       try {
         const logoThemeVars = await extractLogoThemeVars(logoDataUrl);
-        onChange({ logoDataUrl, logoThemeVars });
+        const result = await api("/api/appearance/logo", {
+          method: "POST",
+          body: JSON.stringify({ name: file.name, contentType: file.type, dataUrl: logoDataUrl })
+        });
+        onChange({ logoDataUrl: result.logo?.url || logoDataUrl, logoThemeVars });
       } catch {
-        onChange({ logoDataUrl, logoThemeVars: null });
+        try {
+          const result = await api("/api/appearance/logo", {
+            method: "POST",
+            body: JSON.stringify({ name: file.name, contentType: file.type, dataUrl: logoDataUrl })
+          });
+          onChange({ logoDataUrl: result.logo?.url || logoDataUrl, logoThemeVars: null });
+        } catch (error) {
+          setLogoError(error.message);
+        }
       }
     };
     reader.onerror = () => setLogoError("Logo kon niet worden gelezen.");
@@ -3601,7 +3622,13 @@ function AppearancePanel({ appearance, onChange }) {
             <input type="file" accept="image/*" onChange={uploadLogo} />
           </label>
           {appearance.logoDataUrl ? (
-            <button type="button" onClick={() => onChange({ logoDataUrl: "", logoThemeVars: null })}>
+            <button
+              type="button"
+              onClick={async () => {
+                await api("/api/appearance/logo", { method: "DELETE" }).catch(() => {});
+                onChange({ logoDataUrl: "", logoThemeVars: null });
+              }}
+            >
               <X size={16} />
               Verwijder
             </button>

@@ -19,6 +19,8 @@ const envPath = path.join(dataRoot, ".env");
 const addressBookPath = path.join(dataRoot, "address-book.json");
 const musicLibraryPath = path.join(dataRoot, "music-library.json");
 const musicFilesDir = path.join(dataRoot, "music-files");
+const logoFilePath = path.join(dataRoot, "custom-logo");
+const logoMetaPath = path.join(dataRoot, "custom-logo.json");
 const app = express();
 const mailTimeoutMs = 12000;
 const maxSourceLength = 500000;
@@ -363,6 +365,21 @@ async function saveMusicLibrary(tracks) {
   const sorted = [...tracks].sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
   await fs.writeFile(musicLibraryPath, JSON.stringify({ tracks: sorted }, null, 2), "utf8");
   return sorted;
+}
+
+async function loadLogoMeta() {
+  try {
+    const meta = JSON.parse(await fs.readFile(logoMetaPath, "utf8"));
+    return {
+      contentType: String(meta.contentType || "image/png"),
+      name: String(meta.name || "custom-logo"),
+      size: Number(meta.size || 0),
+      updatedAt: meta.updatedAt || new Date().toISOString()
+    };
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
 }
 
 const demoMessages = [
@@ -1449,6 +1466,62 @@ app.get("/api/government-feeds", async (req, res, next) => {
       items: feed.items,
       errors: feed.errors
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/appearance/logo-meta", async (_req, res, next) => {
+  try {
+    const meta = await loadLogoMeta();
+    res.json({ logo: meta ? { ...meta, url: `/api/appearance/logo?v=${encodeURIComponent(meta.updatedAt)}` } : null });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/appearance/logo", async (_req, res, next) => {
+  try {
+    const meta = await loadLogoMeta();
+    if (!meta) return res.status(404).json({ error: "Geen eigen logo opgeslagen." });
+    res.setHeader("Content-Type", meta.contentType || "image/png");
+    res.setHeader("Cache-Control", "private, max-age=86400");
+    res.sendFile(logoFilePath);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/appearance/logo", async (req, res, next) => {
+  try {
+    const { name, contentType, dataUrl } = req.body || {};
+    const match = String(dataUrl || "").match(/^data:([^;,]+);base64,([a-z0-9+/=\r\n]+)$/i);
+    if (!match) return res.status(400).json({ error: "Upload bevat geen geldige afbeelding." });
+    const detectedType = String(match[1] || contentType || "").toLowerCase();
+    if (!detectedType.startsWith("image/")) return res.status(400).json({ error: "Kies een afbeelding als logo." });
+    const buffer = Buffer.from(match[2].replace(/\s/g, ""), "base64");
+    if (!buffer.length) return res.status(400).json({ error: "Logo is leeg." });
+    if (buffer.length > 8 * 1024 * 1024) return res.status(413).json({ error: "Logo is te groot. Gebruik maximaal 8 MB." });
+
+    const meta = {
+      contentType: detectedType,
+      name: safeMusicName(name || "custom-logo"),
+      size: buffer.length,
+      updatedAt: new Date().toISOString()
+    };
+    await fs.writeFile(logoFilePath, buffer);
+    await fs.writeFile(logoMetaPath, JSON.stringify(meta, null, 2), "utf8");
+    res.json({ ok: true, logo: { ...meta, url: `/api/appearance/logo?v=${encodeURIComponent(meta.updatedAt)}` } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete("/api/appearance/logo", async (_req, res, next) => {
+  try {
+    await fs.unlink(logoFilePath).catch(() => {});
+    await fs.unlink(logoMetaPath).catch(() => {});
+    res.json({ ok: true });
   } catch (error) {
     next(error);
   }
