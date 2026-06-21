@@ -1189,7 +1189,7 @@ function App() {
     setLoading(true);
     setConnectionError("");
     try {
-      const params = new URLSearchParams({ folder, limit: "40" });
+      const params = new URLSearchParams({ folder, limit: options.limit || "30" });
       if (options.refresh) params.set("refresh", "1");
       const mailbox = await api(`/api/mailbox?${params.toString()}`);
       if (mailboxRequestRef.current !== requestId) return;
@@ -1212,7 +1212,7 @@ function App() {
       setFolders(usableFolders);
       setFolderStats(mailbox.folderStats || {});
       setMessages(nextMessages);
-      setSelectedId(nextMessages[0]?.id || null);
+      setSelectedId((current) => (current && nextMessages.some((message) => message.id === current) ? current : null));
     } catch (error) {
       setToast(error.message);
       setConnectionError(error.message);

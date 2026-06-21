@@ -32,9 +32,13 @@ const governmentFeedRefreshMs = 110000;
 const governmentFeedCache = new Map();
 const folderCacheMs = 300000;
 const folderListCache = new Map();
-const messageListCacheMs = 20000;
+const folderStatsCacheMs = 90000;
+const folderStatsCache = new Map();
+const messageListCacheMs = 60000;
 const messageListCache = new Map();
-const imapKeepAliveMs = 180000;
+const messageDetailCacheMs = 180000;
+const messageDetailCache = new Map();
+const imapKeepAliveMs = 300000;
 const imapSession = {
   key: "",
   client: null,
@@ -1319,7 +1323,7 @@ function statusPayload() {
 }
 
 function messageListLimit(value) {
-  return Math.max(10, Math.min(100, Number(value || 40)));
+  return Math.max(10, Math.min(100, Number(value || 30)));
 }
 
 async function listFoldersFromClient(client) {
@@ -1335,10 +1339,29 @@ function messageCacheKey(cfg, folder, limit) {
   return `${folderCacheKey(cfg)}:${folder}:${limit}`;
 }
 
+function messageDetailCacheKey(cfg, folder, id) {
+  return `${folderCacheKey(cfg)}:${folder}:${id}`;
+}
+
+function folderStatsCacheKey(cfg, folders = []) {
+  return `${folderCacheKey(cfg)}:${folders.join("|")}`;
+}
+
 function clearMessageCachesForFolder(cfg, folder) {
   const prefix = cfg ? `${folderCacheKey(cfg)}:${folder}:` : "";
   for (const key of messageListCache.keys()) {
     if (!cfg || key.startsWith(prefix)) messageListCache.delete(key);
+  }
+  for (const key of messageDetailCache.keys()) {
+    if (!cfg || key.startsWith(prefix)) messageDetailCache.delete(key);
+  }
+  if (cfg) {
+    const statsPrefix = `${folderCacheKey(cfg)}:`;
+    for (const key of folderStatsCache.keys()) {
+      if (key.startsWith(statsPrefix)) folderStatsCache.delete(key);
+    }
+  } else {
+    folderStatsCache.clear();
   }
 }
 
@@ -1383,6 +1406,15 @@ async function folderStatsFromClient(client, folders = []) {
     })
   );
   return Object.fromEntries(entries);
+}
+
+async function cachedFolderStatsFromClient(client, cfg, folders = [], force = false) {
+  const key = folderStatsCacheKey(cfg, folders);
+  const cached = folderStatsCache.get(key);
+  if (!force && cached && Date.now() - cached.fetchedAt < folderStatsCacheMs) return cached.stats;
+  const stats = await folderStatsFromClient(client, folders);
+  folderStatsCache.set(key, { fetchedAt: Date.now(), stats });
+  return stats;
 }
 
 async function fetchMessageList(client, folder, limit = 40) {
@@ -1553,7 +1585,7 @@ app.get("/api/mailbox", async (req, res, next) => {
       const folder = preferredFolder(requestedFolder, folders);
       const [messages, folderStats] = await Promise.all([
         cachedMessageListFromClient(client, cfg, folder, limit, req.query.refresh === "1"),
-        folderStatsFromClient(client, folders)
+        cachedFolderStatsFromClient(client, cfg, folders, req.query.refresh === "1")
       ]);
       return { folders, folderStats, folder, messages };
     });
@@ -1601,14 +1633,18 @@ app.get("/api/messages/:folder/:id", async (req, res, next) => {
       const message = demoMessages.find((item) => item.folder === folder && item.id === id);
       return message ? res.json(message) : res.status(404).json({ error: "Bericht niet gevonden" });
     }
-    const message = await withImap(async (client) => {
+    const message = await withImap(async (client, cfg) => {
+      const cacheKey = messageDetailCacheKey(cfg, folder, id);
+      const cached = messageDetailCache.get(cacheKey);
+      if (cached && Date.now() - cached.fetchedAt < messageDetailCacheMs) return cached.message;
+
       const lock = await client.getMailboxLock(folder);
       try {
         const downloaded = await client.download(Number(id), undefined, { uid: true });
         const rawBuffer = await contentToBuffer(downloaded.content);
         const parsed = await simpleParser(rawBuffer);
         const view = buildEmailView(parsed, rawBuffer);
-        return {
+        const message = {
           id,
           folder,
           from: parsed.from?.text || "",
@@ -1622,6 +1658,8 @@ app.get("/api/messages/:folder/:id", async (req, res, next) => {
           labels: [],
           attachments: parsed.attachments?.map(attachmentMetadata) || []
         };
+        messageDetailCache.set(cacheKey, { fetchedAt: Date.now(), message });
+        return message;
       } finally {
         lock.release();
       }
